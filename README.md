@@ -1,2 +1,9 @@
-# Mangalagent
-We will be implementing Agent that play mangala a ottoman strategy game 
+<div align="center">
+  <img src="assets/Logo.png" alt="MangalAgent Logo" width="300" />
+  <!-- <h1>MangalAgent</h1> -->
+  <h2>Agents playing Mangala</h2>
+</div>
+
+
+We plan to implement Agents 🤖 that can play mangala and posibly beat you 🫵 at it  
+
