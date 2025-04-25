@@ -5,5 +5,5 @@
 </div>
 
 
-We plan to implement Agents 🤖 that can play mangala and posibly beat you 🫵 at it  
+We plan to implement Agents 🤖 that can play mangala and possibly beat you 🫵 at it  
 
