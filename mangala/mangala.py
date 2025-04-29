@@ -71,7 +71,7 @@ class Mangala:
         self.game_over = False
         self.extra_turn = False
 
-    def start_game(self):
+    def start(self):
         while not self.game_over:
             current_agent = self.agent0 if self.player_turn == 0 else self.agent1
             move = current_agent.act((self.board,self.player_turn))
