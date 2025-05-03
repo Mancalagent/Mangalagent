@@ -31,3 +31,6 @@ htmlcov/
 # Local configuration
 .env
 .DS_Store
+
+/tests/game_history
+

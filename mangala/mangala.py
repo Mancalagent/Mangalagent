@@ -1,4 +1,5 @@
 from agents.base_agent import BaseAgent
+from util.util import Util
 
 
 class Mangala:
@@ -13,9 +14,6 @@ class Mangala:
         self.game_over = False
         self.extra_turn = False
 
-    def get_players_pits(self):
-        return range((self.player_turn * 6) + 1, ((self.player_turn + 1) * 6) + 1)
-
     def swap_player(self):
         if self.extra_turn:
             return
@@ -23,6 +21,9 @@ class Mangala:
 
     def make_move(self, pit_index):
         rocks = self.board[pit_index]
+        if rocks == 0:
+            return
+
         self.board[pit_index] = 0
         index = pit_index
         self.extra_turn = False
@@ -32,13 +33,14 @@ class Mangala:
                 # Skip opponent's store
                 continue
             if rocks == 1:
-                player_store = (1 + self.player_turn) * 7 + 1
+                player_store = Util.get_player_store(self.player_turn)
 
-                if self.board[index] == 0 and index in self.get_players_pits():
+                if self.board[index] == 0 and index in Util.get_players_pits(self.player_turn):
                     # Capture opponent's stones
                     opposite_index = 12 - index
                     self.board[player_store] += self.board[opposite_index] + 1
                     self.board[opposite_index] = 0
+                    self.board[index] = -1
 
                 if index == player_store:
                     # Extra turn when the last stone lands in your mangala
@@ -48,11 +50,14 @@ class Mangala:
             rocks -= 1
 
     def check_game_over(self) -> int:
-        player_pits = self.get_players_pits()
-        empty = True
-        for i in player_pits:
-            empty = (self.board[i] != 0) & empty
-        if empty:
+        p1_pits = self.board[0:6]
+        p2_pits = self.board[7:13]
+        if sum(p1_pits) == 0 or sum(p2_pits) == 0:
+            self.game_over = True
+            if sum(p1_pits) == 0:
+                self.board[6] += sum(p2_pits)
+            else:
+                self.board[13] += sum(p1_pits)
             return self.get_winner()
         return -1
 
@@ -74,7 +79,7 @@ class Mangala:
     def start(self):
         while not self.game_over:
             current_agent = self.agent0 if self.player_turn == 0 else self.agent1
-            move = current_agent.act((self.board,self.player_turn))
+            move = current_agent.act((self.board, self.player_turn))
             self.make_move(move)
             result = self.check_game_over()
             if result != -1:
