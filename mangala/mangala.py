@@ -185,7 +185,7 @@ class Mangala:
             else:
                 self.board[13] += sum(p1_pits)
             return self.get_winner(), self.board[6], self.board[13]
-        return -1, self.board[6], self.board[13]
+        return -1, -1, -1
 
     def get_winner(self) -> int:
         player0_score = self.board[6]
@@ -201,7 +201,29 @@ class Mangala:
         self.player_turn = 0
         self.game_over = False
         self.extra_turn = False
+        
+    def flip_board_state(self, state):
+        """Flip the board state according to the current player
+        [0-5] are current player's pits
+        [6] is current player's store
+        [7-12] are opponent's pits
+        [13] is opponent's store
 
+        Args:
+            state (tuple): The current board state and player index
+
+        Returns:
+            tuple: The flipped board state and player index
+        """
+        board, p_index = state
+        if p_index == 0:
+            return board, p_index
+
+        p0_board = board[0:7]
+        p1_board = board[7:14]
+        flipped_board = p1_board + p0_board
+        return flipped_board, p_index 
+      
     def start(self):
         while not self.game_over:
             current_agent = self.agent0 if self.player_turn == 0 else self.agent1
@@ -214,8 +236,8 @@ class Mangala:
             valid_move = False
             while not valid_move:
                 # Get move as 0-5 from either player
-                move = current_agent.act((self.board, self.player_turn))
-                
+                move = current_agent.act(self.flip_board_state((self.board, self.player_turn))) # sending the board state according to the current player
+                print(f"Move: {move}")
                 # Validate move is within 0-5
                 if move < 0 or move > 5:
                     print(f"Invalid move {move}, must be 0-5. Try again.")
@@ -233,3 +255,6 @@ class Mangala:
                 break
             
             self.swap_player()
+            
+            
+         
