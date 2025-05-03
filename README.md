@@ -7,3 +7,16 @@
 
 We plan to implement Agents 🤖 that can play mangala and possibly beat you 🫵 at it  
 
+## Installation steps
+
+### 1. Create conda env: 
+
+```
+conda create -n mangalagent python=3.10
+```
+
+### 2. Setup environment and dependancies: 
+running this command will install any depentancies neccecsery and configure envrionmnet
+
+`pip install -e .`
+
