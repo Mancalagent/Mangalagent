@@ -21,7 +21,7 @@ class HumanAgent(BaseAgent):
         self.game_state = board
         
         
-        Util.save_board_state(self.id, board, p_index)
+
         # Always ask for input 0-5 regardless of player
         pit_index = int(input(f"Player {p_index}, choose a pit (0-5): "))
         print(f"Pit index: {pit_index}")
@@ -29,7 +29,7 @@ class HumanAgent(BaseAgent):
             # print(f"Invalid pit index, please pick one of these {self.get_available_actions(state)}")
             pit_index = int(input(f"Invalid choice. Choose a pit from 0-5: "))
             return pit_index  # Return 0-5, Mangala class will handle translation
-        
+        Util.save_board_state(self.id, board, pit_index)
         print(f"As player {self.player_index}, taking action {pit_index}")
         
         return pit_index

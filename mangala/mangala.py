@@ -29,7 +29,7 @@ class Mangala:
         self.flip_board()
 
     @classmethod
-    def transition(cls, state, action):
+    def transition(cls, state, action) -> tuple[[int], int, bool]:
         rocks = state[action]
         if rocks == 0:
             raise ValueError("Invalid action: No stones in the selected pit.")
@@ -43,11 +43,12 @@ class Mangala:
 
         index = action
         player_turn = 0
-
         player_store = Util.get_player_store(player_turn)
         player_pits = Util.get_players_pits(player_turn)
         opponent_store = Util.get_player_store(1 - player_turn)
         opponent_pits = Util.get_players_pits(1 - player_turn)
+
+        initial_rocks = player_store
 
         while rocks > 0:
             index = (index + 1) % 14
@@ -83,7 +84,9 @@ class Mangala:
 
             state[index] += 1
             rocks -= 1
-        return state
+        reward = state[player_store] - initial_rocks
+        is_terminal = Mangala.check_game_over(state)
+        return state, reward, is_terminal
 
     def check_for_extra_turn(self, pit_index):
         rocks = self.board[pit_index]
@@ -98,7 +101,9 @@ class Mangala:
     def make_move(self, pit_index) -> None:
         self.extra_turn = False
         self.check_for_extra_turn(pit_index)
-        new_board = Mangala.transition(self.board, pit_index)
+        new_board,_,is_terminal = Mangala.transition(self.board, pit_index)
+        if is_terminal:
+            self.game_over = True
         self.board = new_board
 
     def display_board(self):
@@ -131,22 +136,21 @@ class Mangala:
             print("       0     1     2     3     4     5")
             print("--------------------------------------------")
 
-    def check_game_over(self) -> None:
-        p1_pits = self.board[0:6]
-        p2_pits = self.board[7:13]
+    @classmethod
+    def check_game_over(self,board) -> bool:
+        p1_pits = board[0:6]
+        p2_pits = board[7:13]
+        game_over = False
         if sum(p1_pits) == 0 or sum(p2_pits) == 0:
-            self.game_over = True
+            game_over = True
             if sum(p1_pits) == 0:
-                self.board[6] += sum(p2_pits)
+                board[6] += sum(p2_pits)
             else:
-                self.board[13] += sum(p1_pits)
-            self.board[0:6] = [0] * 6
-            self.board[7:13] = [0] * 6
+                board[13] += sum(p1_pits)
+            board[0:6] = [0] * 6
+            board[7:13] = [0] * 6
 
-        if self.game_over:
-            print(f"Game over! Player {self.get_winner()} wins!")
-            print(f"Player 0 score: {self.board[6]}")
-            print(f"Player 1 score: {self.board[13]}")
+        return game_over
 
     def get_winner(self) -> int:
         player0_score = self.board[6]
@@ -182,5 +186,8 @@ class Mangala:
             move = current_agent.act((self.board, self.player_turn))
             print(f"Move: {move}")
             self.make_move(move)
-            self.check_game_over()
+            if self.game_over:
+                print(f"Game over! Player {self.get_winner()} wins!")
+                print(f"Player 0 score: {self.board[6]}")
+                print(f"Player 1 score: {self.board[13]}")
             self.swap_player()
