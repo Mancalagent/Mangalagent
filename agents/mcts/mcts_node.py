@@ -1,6 +1,6 @@
 
 class MCTNode:
-    def __init__(self, state, parent=None):
+    def __init__(self, state=None, parent=None):
         self.state = state
         self.parent = parent
         self.children = {}  # Map from action to MCTSNode

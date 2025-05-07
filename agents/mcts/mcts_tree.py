@@ -1,6 +1,5 @@
-import torch
-from mcts.mcts_node import MCTNode
-import numpy as np
+from agents.mcts import MCTNode
+
 
 class MCTSTree:
     def __init__(self, **kwargs):

@@ -1,4 +1,4 @@
-from mcts.mcts_tree import MCTSTree
+from agents.mcts import MCTSTree
 
 
 class MCTSTrainer:
