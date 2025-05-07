@@ -1,14 +1,15 @@
-import sys
 import os
+import sys
 
-# Add the parent directory to sys.path to find modules
+from agents.human_agent import HumanAgent
+
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from agents.base_agent import BaseAgent
 from mangala.mangala import Mangala
 
 if __name__ == '__main__':
-    p0 = BaseAgent("player0")
-    p1 = BaseAgent("player1")
+    p0 = HumanAgent("player0")
+    p1 = HumanAgent("player1")
     game = Mangala(p0, p1)
     game.start()
