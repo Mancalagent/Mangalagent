@@ -93,7 +93,7 @@ class Mangala:
         if rocks != 1:
             rocks -= 1
 
-        player_store = Util.get_player_store(self.player_turn)
+        player_store = 6
         if (rocks + pit_index) == player_store:
             self.extra_turn = True
             print(f"Extra turn! Player {self.player_turn} gets another turn.")
@@ -109,32 +109,18 @@ class Mangala:
     def display_board(self):
         print(f"Player {self.player_turn}'s turn")
         """Display board from current player's perspective"""
-        if self.player_turn == 1:
-            print("                 Player 1     ")
-            print("--------------------------------------------")
-            print("       5'    4'    3'    2'    1'    0'")
-            print("    +-----+-----+-----+-----+-----+-----+")
-            print(
-                f"    | {self.board[5]:2d}  | {self.board[4]:2d}  | {self.board[3]:2d}  | {self.board[2]:2d}  | {self.board[1]:2d}  | {self.board[0]:2d}  |")
-            print(f" {self.board[6]:2d} +-----+-----+-----+-----+-----+-----+ {self.board[13]:2d}")
-            print(
-                f"    | {self.board[7]:2d}  | {self.board[8]:2d}  | {self.board[9]:2d}  | {self.board[10]:2d}  | {self.board[11]:2d}  | {self.board[12]:2d}  |")
-            print("    +-----+-----+-----+-----+-----+-----+")
-            print("       0     1     2     3     4     5")
-            print("--------------------------------------------")
-        else:
-            print("                  Player 0      ")
-            print("--------------------------------------------")
-            print("       5'    4'    3'    2'    1'    0'")
-            print("    +-----+-----+-----+-----+-----+-----+")
-            print(
-                f"    | {self.board[12]:2d}  | {self.board[11]:2d}  | {self.board[10]:2d}  | {self.board[9]:2d}  | {self.board[8]:2d}  | {self.board[7]:2d}  |")
-            print(f" {self.board[13]:2d} +-----+-----+-----+-----+-----+-----+ {self.board[6]:2d}")
-            print(
-                f"    | {self.board[0]:2d}  | {self.board[1]:2d}  | {self.board[2]:2d}  | {self.board[3]:2d}  | {self.board[4]:2d}  | {self.board[5]:2d}  |")
-            print("    +-----+-----+-----+-----+-----+-----+")
-            print("       0     1     2     3     4     5")
-            print("--------------------------------------------")
+        print("--------------------------------------------")
+        print("       5'    4'    3'    2'    1'    0'")
+        print("    +-----+-----+-----+-----+-----+-----+")
+        print(
+            f"    | {self.board[12]:2d}  | {self.board[11]:2d}  | {self.board[10]:2d}  | {self.board[9]:2d}  | {self.board[8]:2d}  | {self.board[7]:2d}  |")
+        print(f" {self.board[13]:2d} +-----+-----+-----+-----+-----+-----+ {self.board[6]:2d}")
+        print(
+            f"    | {self.board[0]:2d}  | {self.board[1]:2d}  | {self.board[2]:2d}  | {self.board[3]:2d}  | {self.board[4]:2d}  | {self.board[5]:2d}  |")
+        print("    +-----+-----+-----+-----+-----+-----+")
+        print("       0     1     2     3     4     5")
+        print(f"                  Player {self.player_turn}      ")
+        print("--------------------------------------------")
 
     @classmethod
     def check_game_over(self,board) -> bool:

@@ -53,3 +53,12 @@ class MangalaTest(unittest.TestCase):
                  0, 0, 0, 0, 0, 0, 11]
         result = game.board
         self.assertEqual(result, expected)
+
+    @patch.object(BaseAgent, 'act', return_value=3)
+    def test_agent_action_patched(self, mock_act):
+        state = [0, 0, 0, 4, 0, 1, 9,
+                 0, 0, 1, 1, 0, 0, 11]
+        game = Mangala(agent0=BaseAgent("player0"), agent1=BaseAgent("player1"),board=state)
+        game.start()
+
+        self.assertEqual(game.player_turn,0)
