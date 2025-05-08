@@ -85,8 +85,6 @@ class Mangala:
             state[index] += 1
             rocks -= 1
         is_terminal = Mangala.check_game_over(state)
-        print(f"current store: {state[player_store]}")
-        print(f"initial rocks: {initial_rocks}")
         reward = (state[player_store] - initial_rocks) + (is_terminal==True)*1000
         return state, reward, is_terminal
 
