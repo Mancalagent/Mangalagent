@@ -48,7 +48,7 @@ class Mangala:
         opponent_store = Util.get_player_store(1 - player_turn)
         opponent_pits = Util.get_players_pits(1 - player_turn)
 
-        initial_rocks = player_store
+        initial_rocks = state[player_store]
 
         while rocks > 0:
             index = (index + 1) % 14
@@ -84,8 +84,10 @@ class Mangala:
 
             state[index] += 1
             rocks -= 1
-        reward = state[player_store] - initial_rocks
         is_terminal = Mangala.check_game_over(state)
+        print(f"current store: {state[player_store]}")
+        print(f"initial rocks: {initial_rocks}")
+        reward = (state[player_store] - initial_rocks) + (is_terminal==True)*1000
         return state, reward, is_terminal
 
     def check_for_extra_turn(self, pit_index):
