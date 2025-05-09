@@ -8,12 +8,12 @@ if __name__ == '__main__':
     trainer = TDTrainer(
         agent=agent0,
         network=None,
-        learning_rate=0.01,
+        learning_rate=1e-4,
         discount_factor=0.9,
         trace_decay=0.7,
     )
 
-    trainer.train(episodes=1000)
+    trainer.train(episodes=10000)
     name = datetime.now().strftime("%Y%m%d_%H%M%S")
     trainer.save_model(filepath=f"{name}_model.pth")
 

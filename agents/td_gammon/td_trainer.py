@@ -1,4 +1,9 @@
+import pprint
+
 import torch
+import matplotlib
+matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
 from torch import optim
 
 from mangala.mangala import Mangala
@@ -19,6 +24,7 @@ class TDTrainer:
         self.optimizer = optim.SGD(self.net.parameters(), lr=self.learning_rate)
 
     def train(self, episodes):
+        losses = []
         for episode in range(episodes):
             state = [4]*14
             state[6] = 0
@@ -26,14 +32,15 @@ class TDTrainer:
             e_trace = [torch.zeros_like(p) for p in self.net.parameters()]
             flip = False
             done = False
+            episode_loss = 0.0
             while not done:
                 if flip:
                     state = Mangala.flip_board(state)
                     flip = False
-                print(f"Episode {episode}, State: {state}")
+                #print(f"Episode {episode}, State: {state}")
                 actions = self.agent.get_available_actions(state)
                 action = max(actions, key=lambda x: self.net(Mangala.transition(state, x)[0]).item())
-                print(f"Action: {action}")
+                #print(f"Action: {action}")
                 if Mangala.check_for_extra_turn(state,action):
                     flip = True
 
@@ -54,9 +61,17 @@ class TDTrainer:
                     for i, p in enumerate(self.net.parameters()):
                         grad = p.grad.detach()
                         e_trace[i] = self.discount_factor * self.trace_decay * e_trace[i] + grad
-                        p += self.learning_rate * td_error * e_trace[i]
-
+                        p_new = p + self.learning_rate * td_error * e_trace[i]
+                        p.copy_(p_new)
+                episode_loss += td_error.item() ** 2
                 state = next_state
+            losses.append(episode_loss)
+        pprint.pprint(losses)
+        plt.plot(losses)
+        plt.xlabel("Episode")
+        plt.ylabel("TD Error Squared")
+        plt.title("TD Loss Over Episodes")
+        plt.show()
 
     def save_model(self, filepath):
         torch.save(self.net.state_dict(), filepath)
