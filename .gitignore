@@ -34,3 +34,5 @@ htmlcov/
 
 /tests/game_history
 
+*.pth
+

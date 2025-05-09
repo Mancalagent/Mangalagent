@@ -1,16 +1,13 @@
 import torch
 from torch import optim
 
-from agents.base_agent import BaseAgent
-from agents.random_agent import RandomAgent
 from mangala.mangala import Mangala
 from . import TDNetwork
 
 
 class TDTrainer:
-    def __init__(self, game: Mangala, agent: BaseAgent, network, learning_rate=0.01, discount_factor=0.9,
+    def __init__(self, agent, network, learning_rate=0.01, discount_factor=0.9,
                  trace_decay=0.7):
-        self.game = game
         self.agent = agent
         self.learning_rate = learning_rate
         self.discount_factor = discount_factor
@@ -23,22 +20,24 @@ class TDTrainer:
 
     def train(self, episodes):
         for episode in range(episodes):
-            self.game.reset()
-            state = self.game.board
+            state = [4]*14
+            state[6] = 0
+            state[13] = 0
             e_trace = [torch.zeros_like(p) for p in self.net.parameters()]
             flip = False
-            while not self.game.game_over:
+            done = False
+            while not done:
                 if flip:
                     state = Mangala.flip_board(state)
                     flip = False
-
+                print(f"Episode {episode}, State: {state}")
                 actions = self.agent.get_available_actions(state)
-                action = max(actions, key=lambda x: self.net(self.game.transition(state, x)[0]).item())
-
+                action = max(actions, key=lambda x: self.net(Mangala.transition(state, x)[0]).item())
+                print(f"Action: {action}")
                 if Mangala.check_for_extra_turn(state,action):
                     flip = True
 
-                next_state, reward, is_terminal = self.game.transition(state, action)
+                next_state, reward, is_terminal = Mangala.transition(state, action)
 
                 v = self.net(state)
                 v_next = self.net(next_state)

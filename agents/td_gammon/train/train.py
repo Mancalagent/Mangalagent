@@ -1,16 +1,11 @@
-from agents.random_agent import RandomAgent
-from mangala.mangala import Mangala
+from datetime import datetime
+
+from agents.base_agent import BaseAgent
 from agents.td_gammon.td_trainer import TDTrainer
 
 if __name__ == '__main__':
-    agent0 = RandomAgent(53)
-    game = Mangala(
-        agent0=agent0,
-        agent1=agent0,
-    )
-
+    agent0 = BaseAgent(53)
     trainer = TDTrainer(
-        game=game,
         agent=agent0,
         network=None,
         learning_rate=0.01,
@@ -19,5 +14,6 @@ if __name__ == '__main__':
     )
 
     trainer.train(episodes=5)
-    trainer.save_model(filepath="model.pth")
+    name = datetime.now().strftime("%Y%m%d_%H%M%S")
+    trainer.save_model(filepath=f"{name}_model.pth")
 

@@ -31,12 +31,12 @@ class Mangala:
 
     @classmethod
     def transition(cls, state, action) -> tuple[[int], int, bool]:
+        state = state.copy()
         rocks = state[action]
         if rocks == 0:
             raise ValueError("Invalid action: No stones in the selected pit.")
 
         if rocks == 1:
-            print("rocks 1")
             state[action] = 0
         else:
             rocks -= 1
@@ -61,7 +61,7 @@ class Mangala:
                 if index in player_pits and state[index] == 0:
                     opposite_index = 12 - index
                     if state[opposite_index] > 0:  # Only capture if there are stones
-                        print(f"Capture! Taking stones from pit {opposite_index % 7}")
+                        #print(f"Capture! Taking stones from pit {opposite_index % 7}")
                         state[player_store] += state[opposite_index] + 1  # Add captured stones + last stone
                         state[opposite_index] = 0
                         # Don't add the stone to this pit - it's already counted in player_store
@@ -74,10 +74,10 @@ class Mangala:
                         continue
 
                 elif index in opponent_pits:
-                    print(f"Landing on opponent's pit {index % 7}")
+                    #print(f"Landing on opponent's pit {index % 7}")
                     new_count = state[index] + 1
                     if new_count % 2 == 0:
-                        print(f"Even capture! Taking {new_count} stones from opponent's pit {index % 7}")
+                        #print(f"Even capture! Taking {new_count} stones from opponent's pit {index % 7}")
                         state[player_store] += new_count
                         state[index] = 0
                         rocks -= 1
@@ -112,6 +112,7 @@ class Mangala:
         if is_terminal:
             self.game_over = True
         self.board = new_board
+        self.swap_player()
 
     def display_board(self):
         print(f"Player {self.player_turn}'s turn")
@@ -180,4 +181,3 @@ class Mangala:
                 print(f"Game over! Player {self.get_winner()} wins!")
                 print(f"Player 0 score: {self.board[6]}")
                 print(f"Player 1 score: {self.board[13]}")
-            self.swap_player()
