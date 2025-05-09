@@ -30,6 +30,7 @@ class Mangala:
 
     @classmethod
     def transition(cls, state, action) -> tuple[[int], int, bool]:
+        state = state.copy()
         rocks = state[action]
         if rocks == 0:
             raise ValueError("Invalid action: No stones in the selected pit.")
@@ -87,6 +88,11 @@ class Mangala:
         is_terminal = Mangala.check_game_over(state)
         reward = (state[player_store] - initial_rocks) + (is_terminal==True)*1000
         return state, reward, is_terminal
+    
+    @classmethod
+    def check_terminal(cls, board) -> bool:
+        return Mangala.check_game_over(board)
+    
 
     def check_for_extra_turn(self, pit_index):
         rocks = self.board[pit_index]
@@ -143,7 +149,10 @@ class Mangala:
         player1_score = self.board[13]
         if player0_score > player1_score:
             return 0
-        return 1
+        elif player0_score < player1_score:
+            return 1
+        else:
+            return 2
 
     def reset(self):
         self.board = [4] * 14
@@ -168,7 +177,7 @@ class Mangala:
     def start(self):
         while not self.game_over:
             current_agent = self.agent0 if self.player_turn == 0 else self.agent1
-            self.display_board()
+            # self.display_board()
             move = current_agent.act((self.board, self.player_turn))
             print(f"Move: {move}")
             self.make_move(move)
