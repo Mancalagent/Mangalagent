@@ -26,7 +26,8 @@ class Mangala:
         if self.extra_turn:
             return
         self.player_turn = 1 - self.player_turn
-        self.flip_board()
+        if not self.extra_turn:
+            self.flip_board(self.board)
 
     @classmethod
     def transition(cls, state, action) -> tuple[[int], int, bool]:
@@ -88,19 +89,25 @@ class Mangala:
         reward = (state[player_store] - initial_rocks) + (is_terminal==True)*1000
         return state, reward, is_terminal
 
-    def check_for_extra_turn(self, pit_index):
-        rocks = self.board[pit_index]
+    @classmethod
+    def check_for_extra_turn(cls,state,pit_index) -> bool:
+        rocks = state[pit_index]
         if rocks != 1:
             rocks -= 1
 
         player_store = 6
         if (rocks + pit_index) == player_store:
-            self.extra_turn = True
-            print(f"Extra turn! Player {self.player_turn} gets another turn.")
+            return True
+        return False
+
 
     def make_move(self, pit_index) -> None:
         self.extra_turn = False
-        self.check_for_extra_turn(pit_index)
+        extra_turn = Mangala.check_for_extra_turn(self.board,pit_index)
+        if extra_turn:
+            self.extra_turn = True
+            print(f"Player {self.player_turn} gets an extra turn!")
+
         new_board,_,is_terminal = Mangala.transition(self.board, pit_index)
         if is_terminal:
             self.game_over = True
@@ -153,16 +160,13 @@ class Mangala:
         self.game_over = False
         self.extra_turn = False
 
-    def flip_board(self):
-        print("Flipping board")
-        if self.extra_turn:
-            return
-        board = self.board.copy()
-        print(f"Board before flip: {board}")
+    @classmethod
+    def flip_board(cls,board):
+        board = board.copy()
         board_1 = board[0:7]
         board_2 = board[7:14]
-        self.board = board_2 + board_1
-        print(f"Board after flip: {self.board}")
+        board = board_2 + board_1
+        return board
 
 
     def start(self):

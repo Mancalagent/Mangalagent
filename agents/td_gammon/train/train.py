@@ -1,14 +1,12 @@
 from agents.random_agent import RandomAgent
 from mangala.mangala import Mangala
-from . import TDTrainer
+from agents.td_gammon.td_trainer import TDTrainer
 
 if __name__ == '__main__':
     agent0 = RandomAgent(53)
-    agent1 = RandomAgent(34)
-
     game = Mangala(
         agent0=agent0,
-        agent1=agent1,
+        agent1=agent0,
     )
 
     trainer = TDTrainer(
@@ -20,6 +18,6 @@ if __name__ == '__main__':
         trace_decay=0.7,
     )
 
-    trainer.train(episodes=15)
+    trainer.train(episodes=5)
     trainer.save_model(filepath="model.pth")
 
