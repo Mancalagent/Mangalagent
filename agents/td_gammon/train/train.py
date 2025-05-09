@@ -13,7 +13,7 @@ if __name__ == '__main__':
         trace_decay=0.7,
     )
 
-    trainer.train(episodes=5)
+    trainer.train(episodes=1000)
     name = datetime.now().strftime("%Y%m%d_%H%M%S")
     trainer.save_model(filepath=f"{name}_model.pth")
 
