@@ -104,10 +104,10 @@ class MCTSNode:
         returns: None
         """
         for action in self.state.get_legal_actions():
-            print(f"Adding child for action: {action}")
-            print(self.state.get_state())
+            # print(f"Adding child for action: {action}")
+            # print(self.state.get_state())
             child, _, _ = Mangala.transition(self.state.get_state(), action)
-            print(child)
+            # print(child)
             child = MCTSNode(State(child), self)
             if self.network:
                 pass 
@@ -143,19 +143,19 @@ class MCTSNode:
         
 if __name__ == "__main__":
     
-    print("Testing State class")
+    # print("Testing State class")
     state = State([1, 0, 1, 1, 0, 1, 1,\
                    0, 1, 0, 0, 0, 0, 0, ])
     
-    print(state.get_legal_actions())
+    # print(state.get_legal_actions())
     
-    print("Testing Edge class")
-    edge = Edge(0, state, state)
-    print(edge.get_action())
-    print(edge.get_source().get_state())
-    print(edge.get_target().get_state())
+    # print("Testing Edge class")
+    # edge = Edge(0, state, state)
+    # print(edge.get_action())
+    # print(edge.get_source().get_state())
+    # print(edge.get_target().get_state())
     
-    print("Testing MCTSNode class")
+    # print("Testing MCTSNode class")
     node = MCTSNode(state)
     node.add_available_childen()
     for child in node.get_children():

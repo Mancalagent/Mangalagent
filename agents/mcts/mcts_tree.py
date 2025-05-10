@@ -1,16 +1,17 @@
 from agents.mcts.mcts_node import MCTSNode, State
 from mangala.mangala import Mangala
 from agents.random_agent import RandomAgent
+from agents.mcts.mcts_node import Edge
 
 
 
 class MCTSTree:
     def __init__(self, **kwargs):
         init_state = kwargs.get('init_state', None)
-        print("initial state", init_state)
+        # print("initial state", init_state)
         
         self.root = MCTSNode(init_state)
-        print("root", self.root)
+        # print("root", self.root)
         
         
         self.network = kwargs.get('network', None)
@@ -24,12 +25,12 @@ class MCTSTree:
     
         
         if best_child == -1:
-            print(f"best child is terminal state {best_child.get_state().get_state()}")
+            # print(f"best child is terminal state {best_child.get_state().get_state()}")
             trajectories = self._backpropagate(r, best_child)
             return trajectories
         
         elif best_child is None:
-            print(f"best child is root {current_node.get_state().get_state()}")
+            # print(f"best child is root {current_node.get_state().get_state()}")
             self._expand(current_node)
             for child in current_node.get_children():
                 r = self._simulate(child)
@@ -37,7 +38,7 @@ class MCTSTree:
             return trajectories
             
         else:
-            print(f"best child is {best_child.get_state().get_state()}")
+            # print(f"best child is {best_child.get_state().get_state()}")
             
             self._expand(best_child)
             for child in best_child.get_children():
@@ -62,7 +63,7 @@ class MCTSTree:
         Returns:
             (path, node): Tuple with the path taken and the final leaf/terminal node
         """
-        print("selecting")
+        # print("selecting")
 
         
         while True:
@@ -97,7 +98,7 @@ class MCTSTree:
                 # PUCT formula: Q(s,a) + c_puct * P(s,a) * sqrt(sum(N(s,b))) / (1 + N(s,a))
                 U = c_puct * prior_prob * (total_edge_visits ** 0.5) / (1 + edge.get_visits())
                 
-                print(f"action {edge.get_action()} has Q + U value {Q + U}, with prior probability {prior_prob} and value {edge.get_value()} and visits {edge.get_visits()}")
+                # print(f"action {edge.get_action()} has Q + U value {Q + U}, with prior probability {prior_prob} and value {edge.get_value()} and visits {edge.get_visits()}")
                 score = Q + U
                 
                 if score > best_score:
@@ -119,14 +120,16 @@ class MCTSTree:
     def _expand(self, current_node):
         
         if self.network:
-            pass
+           pass
+    
+                
         else:
-            print("expanding to all possible children (UNIFORM PRIOR PROB)")
+            # print("expanding to all possible children (UNIFORM PRIOR PROB)")
             current_node.add_available_childen()
-            print("parent edge", current_node.get_parent_edge())
+            # print("parent edge", current_node.get_parent_edge())
         
     def _simulate(self,current_node):
-        print("simulating")
+        # print("simulating")
         state = current_node.get_state()
         game = Mangala(RandomAgent("player1"), RandomAgent("player2"), state.get_state())
         game.start()
@@ -139,7 +142,7 @@ class MCTSTree:
         
     def _backpropagate(self, value, node):
         trajectory = []
-        print("backpropagating")
+        # print("backpropagating")
 
         while node.get_parent_edge() is not None:
             trajectory.append((node.get_parent().get_state(),node.get_parent_edge().get_action(), value))
@@ -246,11 +249,11 @@ if __name__ == "__main__":
     trajectories_data = []
     
     tree = MCTSTree(init_state=state)
-    for i in range(10000):
-        trajectories = tree.run_iteration(1.0)
+    for i in range(2):
+        trajectories = tree.run_iteration(c_puct=1.0)
         trajectories_data.append(trajectories)
     print(trajectories_data)
-    # tree.visualize_tree(tree.get_root(), 0, )
+    tree.visualize_tree(tree.get_root(), 0, )
     
     
     
