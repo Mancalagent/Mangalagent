@@ -1,4 +1,5 @@
 import pprint
+import random
 
 import torch
 import matplotlib
@@ -21,7 +22,7 @@ class TDTrainer:
             self.net = TDNetwork()
         else:
             self.net = network
-        self.optimizer = optim.SGD(self.net.parameters(), lr=self.learning_rate)
+        self.optimizer = optim.Adam(self.net.parameters(), lr=self.learning_rate)
 
     def train(self, episodes):
         losses = []
@@ -33,27 +34,31 @@ class TDTrainer:
             flip = False
             done = False
             episode_loss = 0.0
+            epsilon = max(0.1, 1.0 - episode / episodes)
             while not done:
                 if flip:
                     state = Mangala.flip_board(state)
                     flip = False
-                #print(f"Episode {episode}, State: {state}")
+
                 actions = self.agent.get_available_actions(state)
-                action = max(actions, key=lambda x: self.net(Mangala.transition(state, x)[0]).item())
-                #print(f"Action: {action}")
+
+                if random.random() < epsilon:
+                    action = random.choice(actions)
+                else:
+                    action = max(actions, key=lambda x: self.net(Mangala.transition(state, x)[0]).item())
+
+
                 if Mangala.check_for_extra_turn(state,action):
                     flip = True
 
                 next_state, reward, is_terminal = Mangala.transition(state, action)
+                if is_terminal:
+                    done = True
 
                 v = self.net(state)
                 v_next = self.net(next_state)
 
-                if is_terminal:
-                    td_error = reward - v
-                    done = True
-                else:
-                    td_error = reward + self.discount_factor * v_next - v
+                td_error = reward - v if is_terminal else reward + self.discount_factor * v_next - v
 
                 self.optimizer.zero_grad()
                 v.backward()
