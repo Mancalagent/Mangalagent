@@ -1,10 +1,10 @@
 import pprint
 import random
 
-import torch
 import matplotlib
+import torch
+
 matplotlib.use('TkAgg')
-import matplotlib.pyplot as plt
 from torch import optim
 
 from mangala.mangala import Mangala
@@ -34,7 +34,7 @@ class TDTrainer:
             flip = False
             done = False
             episode_loss = 0.0
-            epsilon = max(0.1, 1.0 - episode / episodes)
+            epsilon = max(0.1, 0.6 - episode / episodes)
             while not done:
                 if flip:
                     state = Mangala.flip_board(state)
@@ -68,15 +68,11 @@ class TDTrainer:
                         e_trace[i] = self.discount_factor * self.trace_decay * e_trace[i] + grad
                         p_new = p + self.learning_rate * td_error * e_trace[i]
                         p.copy_(p_new)
+
                 episode_loss += td_error.item() ** 2
                 state = next_state
             losses.append(episode_loss)
         pprint.pprint(losses)
-        plt.plot(losses)
-        plt.xlabel("Episode")
-        plt.ylabel("TD Error Squared")
-        plt.title("TD Loss Over Episodes")
-        plt.show()
 
     def save_model(self, filepath):
         torch.save(self.net.state_dict(), filepath)

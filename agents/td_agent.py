@@ -6,6 +6,8 @@ class TDAgent(BaseAgent):
         super().__init__(agent_id)
         self.net = network
     def act(self, state):
-        actions = self.get_available_actions(state)
-        action = max(actions, key=lambda x: self.net(state)[x].item())
+        board,p_index_ = state
+        actions = self.get_available_actions(board)
+        action = max(actions, key=lambda a: self.net(board))
+        #print(f"As player {p_index_}, taking action {action}")
         return action

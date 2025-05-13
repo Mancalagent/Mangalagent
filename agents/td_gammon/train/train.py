@@ -9,11 +9,10 @@ if __name__ == '__main__':
         agent=agent0,
         network=None,
         learning_rate=1e-3,
-        discount_factor=1,
+        discount_factor=0.9,
         trace_decay=0.7,
     )
 
     trainer.train(episodes=1000)
-    name = datetime.now().strftime("%Y%m%d_%H%M%S")
-    trainer.save_model(filepath=f"{name}_model.pth")
+    trainer.save_model(filepath=f"model.pth")
 
