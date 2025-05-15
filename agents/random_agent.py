@@ -16,9 +16,9 @@ class RandomAgent(BaseAgent):
         self.game_state = board
         
 
-        action = random.choice(self.get_available_actions(state))
+        action = random.choice(self.get_available_actions(board))
         Util.save_board_state(self.id, board, action)
-        # print(f"As player {self.player_index}, taking action {action}")
+        #print(f"As player {self.player_index}, taking action {action}")
         return action
     
     
