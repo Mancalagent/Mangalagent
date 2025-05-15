@@ -31,6 +31,7 @@ class Mangala:
             self.board = self.flip_board(self.board)
 
     @classmethod
+
     def transition(cls, state, action) -> tuple[[int], float, bool]:
         state = state.copy()
         rocks = state[action]
@@ -62,7 +63,6 @@ class Mangala:
                 if index in player_pits and state[index] == 0:
                     opposite_index = 12 - index
                     if state[opposite_index] > 0:  # Only capture if there are stones
-                        #print(f"Capture! Taking stones from pit {opposite_index % 7}")
                         state[player_store] += state[opposite_index] + 1  # Add captured stones + last stone
                         state[opposite_index] = 0
                         # Don't add the stone to this pit - it's already counted in player_store
@@ -92,6 +92,11 @@ class Mangala:
         reward += (state[player_store] - initial_rocks) + (is_terminal==True)*100
         reward = reward / 100
         return state, reward, is_terminal
+    
+    @classmethod
+    def check_terminal(cls, board) -> bool:
+        return Mangala.check_game_over(board)
+    
 
     @classmethod
     def check_for_extra_turn(cls,state,pit_index) -> bool:
@@ -103,7 +108,6 @@ class Mangala:
         if (rocks + pit_index) == player_store:
             return True
         return False
-
 
     def make_move(self, pit_index) -> None:
         self.extra_turn = False
@@ -157,7 +161,10 @@ class Mangala:
         player1_score = self.board[13]
         if player0_score > player1_score:
             return 0
-        return 1
+        elif player0_score < player1_score:
+            return 1
+        else:
+            return 2
 
     def reset(self):
         self.board = [4] * 14
@@ -166,7 +173,6 @@ class Mangala:
         self.player_turn = 0
         self.game_over = False
         self.extra_turn = False
-
     @classmethod
     def flip_board(cls,board):
         board = board.copy()

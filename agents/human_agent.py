@@ -33,7 +33,6 @@ class HumanAgent(BaseAgent):
                 is_valid = True
             else:
                 print(f"Invalid choice. Choose a pit from {valid_actions}: ")
-
         Util.save_board_state(self.id, board, pit_index)
         print(f"As player {self.player_index}, taking action {pit_index}")
         
