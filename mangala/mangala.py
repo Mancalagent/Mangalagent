@@ -30,12 +30,13 @@ class Mangala:
 
     @classmethod
     def transition(cls, state, action) -> tuple[[int], int, bool]:
+        state = state.copy()
         rocks = state[action]
         if rocks == 0:
             raise ValueError("Invalid action: No stones in the selected pit.")
 
         if rocks == 1:
-            print("rocks 1")
+            # print("rocks 1")
             state[action] = 0
         else:
             rocks -= 1
@@ -60,7 +61,7 @@ class Mangala:
                 if index in player_pits and state[index] == 0:
                     opposite_index = 12 - index
                     if state[opposite_index] > 0:  # Only capture if there are stones
-                        print(f"Capture! Taking stones from pit {opposite_index % 7}")
+                        # print(f"Capture! Taking stones from pit {opposite_index % 7}")
                         state[player_store] += state[opposite_index] + 1  # Add captured stones + last stone
                         state[opposite_index] = 0
                         # Don't add the stone to this pit - it's already counted in player_store
@@ -73,10 +74,10 @@ class Mangala:
                         continue
 
                 elif index in opponent_pits:
-                    print(f"Landing on opponent's pit {index % 7}")
+                    # print(f"Landing on opponent's pit {index % 7}")
                     new_count = state[index] + 1
                     if new_count % 2 == 0:
-                        print(f"Even capture! Taking {new_count} stones from opponent's pit {index % 7}")
+                        # print(f"Even capture! Taking {new_count} stones from opponent's pit {index % 7}")
                         state[player_store] += new_count
                         state[index] = 0
                         rocks -= 1
@@ -87,6 +88,11 @@ class Mangala:
         is_terminal = Mangala.check_game_over(state)
         reward = (state[player_store] - initial_rocks) + (is_terminal==True)*1000
         return state, reward, is_terminal
+    
+    @classmethod
+    def check_terminal(cls, board) -> bool:
+        return Mangala.check_game_over(board)
+    
 
     def check_for_extra_turn(self, pit_index):
         rocks = self.board[pit_index]
@@ -96,7 +102,7 @@ class Mangala:
         player_store = 6
         if (rocks + pit_index) == player_store:
             self.extra_turn = True
-            print(f"Extra turn! Player {self.player_turn} gets another turn.")
+            #   print(f"Extra turn! Player {self.player_turn} gets another turn.")
 
     def make_move(self, pit_index) -> None:
         self.extra_turn = False
@@ -143,7 +149,10 @@ class Mangala:
         player1_score = self.board[13]
         if player0_score > player1_score:
             return 0
-        return 1
+        elif player0_score < player1_score:
+            return 1
+        else:
+            return 2
 
     def reset(self):
         self.board = [4] * 14
@@ -154,26 +163,26 @@ class Mangala:
         self.extra_turn = False
 
     def flip_board(self):
-        print("Flipping board")
+        # print("Flipping board")
         if self.extra_turn:
             return
         board = self.board.copy()
-        print(f"Board before flip: {board}")
+        # print(f"Board before flip: {board}")
         board_1 = board[0:7]
         board_2 = board[7:14]
         self.board = board_2 + board_1
-        print(f"Board after flip: {self.board}")
+        # print(f"Board after flip: {self.board}")
 
 
     def start(self):
         while not self.game_over:
             current_agent = self.agent0 if self.player_turn == 0 else self.agent1
-            self.display_board()
+            # self.display_board()
             move = current_agent.act((self.board, self.player_turn))
-            print(f"Move: {move}")
+            # print(f"Move: {move}")
             self.make_move(move)
-            if self.game_over:
-                print(f"Game over! Player {self.get_winner()} wins!")
-                print(f"Player 0 score: {self.board[6]}")
-                print(f"Player 1 score: {self.board[13]}")
+            # if self.game_over:
+                # print(f"Game over! Player {self.get_winner()} wins!")
+                # print(f"Player 0 score: {self.board[6]}")
+                # print(f"Player 1 score: {self.board[13]}")
             self.swap_player()

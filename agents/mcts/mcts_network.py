@@ -10,83 +10,45 @@ class SingletonMeta(type):
         return cls._instances[cls]
 
 
-class MCTSNetwork(nn.Module, metaclass=SingletonMeta):
-    """ 
-    This network is for learning one model with two heads 
-    One head is for the value network and the other is for the policy network
-    """
-    def __init__(self):
+class MCTS_Value_Network(nn.Module, metaclass=SingletonMeta):
+    def __init__(self, input_dim = 14, output_dim = 1):
         super().__init__()
+        self.input_dim = input_dim
+        self.output_dim = output_dim
         
-        
-        
+        self.net = nn.Sequential(
+            nn.Linear(input_dim, 128),
+            nn.ReLU(),
+            nn.Linear(128, 128),
+            nn.ReLU(),
+            nn.Linear(128, 1),
+            nn.Sigmoid()
+        )   
+    
     def forward(self, x):
-        return x
+        return self.net(x)
+    
+    
+class MCTS_Policy_Network(nn.Module, metaclass=SingletonMeta):
+        def __init__(self, input_dim = 14, output_dim = 6):
+            super().__init__()
+            self.input_dim = input_dim
+            self.output_dim = output_dim
+            
 
-
-class MCTSValueNetwork(nn.Module, metaclass=SingletonMeta):
-    """
-    Value network takes a state and returns a value regarding that state
-    """
-    def __init__(self):
-        super().__init__()
+            self.net = nn.Sequential(
+                nn.Linear(input_dim, 128),
+                nn.ReLU(),
+                nn.Linear(128, 128),
+                nn.ReLU(),
+                nn.Linear(128, output_dim)
+            )
         
-    def forward(self, x):
-        return x
-    
-    
-class MCTSPolicyNetwork(nn.Module, metaclass=SingletonMeta):
-    """
-    Policy network takes a state and returns a policy
-    This network is a REINFORCE policy gradient network 
-    
-    if Supervised network is used:
-          initilized with weights from the supervised network
-    else: 
-          initilized with random weights
-    """
-    
-    def __init__(self, supervised_network=None):
-        super().__init__()
+        def forward(self, x):
+            return self.net(x)
         
-        if supervised_network is not None:
-            raise NotImplementedError("Supervised network not implemented")
-        else:
-            pass
-                
-
-    def forward(self, x):
-        return x
-    
-    
-    
-    
-class MCTSFastPolicyNetwork(nn.Module, metaclass=SingletonMeta):
-    
-    """
-    This network is used for fast rollouts, which takes a state and returns a policy
-    """
-    
-    def __init__(self):
-        super().__init__()
-        
-    def forward(self, x):
-        return x
-    
-    
-class MCTSSupervisedNetwork(nn.Module, metaclass=SingletonMeta):
-    """
-    Supervised network train on passed plays
-    This network takes a state and returns a policy
-    
-    This network is finetuned before the policy network
-    
-    """
-    def __init__(self):
-        super().__init__()
-        
-    def forward(self, x):
-        return x
+        def inference(self, x):
+            return F.softmax(self.forward(x), dim=1)
         
         
         
