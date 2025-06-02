@@ -18,7 +18,7 @@ def main(args):
     print(f"Generated {len(trajectories)} trajectories.")
     
     # Initialize network trainer
-    network_trainer = NetworkTrainer(lr=args.learning_rate)
+    network_trainer = NetworkTrainer()
     
     # Train the network
     print(f"Training network for {args.epochs} epochs...")
@@ -39,7 +39,7 @@ def main(args):
         network_trainer.plot_training_metrics(metrics, save_path=metrics_plot_path)
     
     # Return the network for further use if needed
-    return network_trainer.network
+    return
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train MCTS Network")

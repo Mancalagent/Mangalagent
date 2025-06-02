@@ -12,7 +12,7 @@ class NetworkTrainer:
     """
     Trainer for the MCTS policy and value networks
     """
-    def __init__(self, lr=0.001, l2_reg=0.0001):
+    def __init__(self, policy_lr=0.001, value_lr=0.0001):
         """
         Initialize the network trainer.
         
@@ -28,8 +28,8 @@ class NetworkTrainer:
         self.policy_network.to(self.device)
         self.value_network.to(self.device)
         
-        self.policy_optimizer = optim.Adam(self.policy_network.parameters(), lr=lr, weight_decay=l2_reg)
-        self.value_optimizer = optim.Adam(self.value_network.parameters(), lr=lr, weight_decay=l2_reg)
+        self.policy_optimizer = optim.Adam(self.policy_network.parameters(), lr=policy_lr)
+        self.value_optimizer = optim.Adam(self.value_network.parameters(), lr=value_lr )
         
         # Loss functions
         self.value_loss_fn = nn.MSELoss()
@@ -48,10 +48,17 @@ class NetworkTrainer:
         """
         # Convert policy logits to log probabilities
         log_probs = F.log_softmax(policy_logits, dim=1)
+        # print(log_probs)
+        # print(actions)
         
         # Compute selected action log probabilities
         # We multiply one-hot actions by log probs and sum across action dimension
-        selected_log_probs = torch.sum(log_probs * actions, dim=1)
+        # print(log_probs.shape)
+        # print(actions.shape)
+        # print(torch.gather(log_probs, 1, actions.unsqueeze(1)).squeeze(1))
+
+
+        selected_log_probs = torch.sum(torch.gather(log_probs, 1, actions.unsqueeze(1)).squeeze(1))
         
         # Compute REINFORCE loss (negative because we want to maximize)
         # We multiply by advantages to weight actions based on their value
@@ -156,38 +163,48 @@ class NetworkTrainer:
                 policy_targets = batch['policy_target'].to(self.device)
                 value_targets = batch['value_target'].float().to(self.device)
                 
-                # Forward pass - separate for policy and value networks
-                policy_logits = self.policy_network(states)
-                value_preds = self.value_network(states).squeeze(-1)
+                self.policy_optimizer.zero_grad()
+                self.value_optimizer.zero_grad()
                 
-                # Calculate losses
-                # For policy, use REINFORCE loss (value_targets as advantage)
+                #REINFORCE - pass the state through policy and value networks 
+                policy_logits = self.policy_network(states) # outputs logits for each action
+                value_preds = self.value_network(states) # outputs value between -1 and 1
+                
+                advantage = (value_targets - value_preds)  # advatage calculation
+                
+                # ------------------------------------------------------------
+                            # VALUE NETWORK UPDATE
+                # ------------------------------------------------------------
+                value_loss = self.value_loss_fn(value_targets,value_preds) # MSE loss ||value_targets - value_preds||**2
+                value_loss.backward()
+                self.value_optimizer.step()
+                # ------------------------------------------------------------
+                
+                
+                 # ------------------------------------------------------------
+                            # POLICY NETWORK LOSS CALCULATION
+                # ------------------------------------------------------------
                 policy_loss = self.reinforce_loss(
                     policy_logits=policy_logits,
                     actions=policy_targets,
-                    advantages=value_targets  # Using game outcomes as advantages
+                    advantages=advantage.detach() 
                 )
-                
-                # For value, use MSE loss
-                value_loss = self.value_loss_fn(value_preds, value_targets)
-                
-                # Combined loss for tracking (not used for optimization)
-                total_loss = policy_loss + value_loss
-                
-                # Calculate accuracy metrics
-                policy_f1 = self.calculate_policy_f1(policy_logits, policy_targets)
-                value_accuracy = self.calculate_value_accuracy(value_preds, value_targets)
-                
-                # Backpropagation - separate for each network
-                # Policy network update
-                self.policy_optimizer.zero_grad()
+                # print("backwards ")
                 policy_loss.backward()
                 self.policy_optimizer.step()
                 
-                # Value network update
-                self.value_optimizer.zero_grad()
-                value_loss.backward()
-                self.value_optimizer.step()
+            
+                
+                
+                # Calculate accuracy metrics
+                # policy_f1 = self.calculate_policy_f1(policy_logits, policy_targets)
+                # value_accuracy = self.calculate_value_accuracy(value_preds, value_targets)
+                
+                # Backpropagation - separate for each network
+                # Policy network update
+                
+               
+                
                 
                 # Track metrics
                 current_policy_loss = policy_loss.item()
@@ -197,16 +214,16 @@ class NetworkTrainer:
                 epoch_policy_loss += current_policy_loss
                 epoch_value_loss += current_value_loss
                 epoch_total_loss += current_total_loss
-                epoch_policy_f1 += policy_f1
-                epoch_value_accuracy += value_accuracy
+                # epoch_policy_f1 += policy_f1
+                # epoch_value_accuracy += value_accuracy
                 batches += 1
                 
                 # Update batch progress bar
                 batch_pbar.set_postfix({
                     'policy_loss': f"{current_policy_loss:.4f}",
                     'value_loss': f"{current_value_loss:.4f}",
-                    'policy_f1': f"{policy_f1:.4f}",
-                    'value_acc': f"{value_accuracy:.4f}"
+                    # 'policy_f1': f"{policy_f1:.4f}",
+                    # 'value_acc': f"{value_accuracy:.4f}"
                 })
             
             # Average metrics for the epoch

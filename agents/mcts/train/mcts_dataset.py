@@ -37,10 +37,9 @@ class MCTSDataset(Dataset):
                         board_state = state
                     self.states.append(torch.FloatTensor(board_state))
                     
-                    # Convert action to one-hot encoded policy target (assuming 6 possible actions)
-                    policy = torch.zeros(6)
-                    if 0 <= action < 6:  # Ensure valid action index
-                        policy[action] = 1.0
+                    policy = action                   
+
+
                     self.policy_targets.append(policy)
                     
                     # Store value target

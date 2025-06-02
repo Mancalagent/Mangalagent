@@ -18,11 +18,11 @@ class MCTS_Value_Network(nn.Module, metaclass=SingletonMeta):
         
         self.net = nn.Sequential(
             nn.Linear(input_dim, 128),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Linear(128, 128),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Linear(128, 1),
-            nn.Sigmoid()
+            nn.Tanh()
         )   
     
     def forward(self, x):
@@ -38,9 +38,9 @@ class MCTS_Policy_Network(nn.Module, metaclass=SingletonMeta):
 
             self.net = nn.Sequential(
                 nn.Linear(input_dim, 128),
-                nn.ReLU(),
+                nn.Tanh(),
                 nn.Linear(128, 128),
-                nn.ReLU(),
+                nn.Tanh(),
                 nn.Linear(128, output_dim)
             )
         
