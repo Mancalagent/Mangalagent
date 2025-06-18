@@ -38,3 +38,11 @@ htmlcov/
 *.txt
 
 models/
+
+agents/mcts/tests
+agents/mcts/train/models
+agents/mcts/train/outputs
+agents/mcts/train/wandb
+wandb/
+model
+data/

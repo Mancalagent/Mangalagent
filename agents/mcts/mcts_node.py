@@ -139,6 +139,16 @@ class MCTSNode:
     
     #########################################################
     
+    def get_outcome(self):
+        p1_score = self.state.get_state()[6]
+        p2_score = self.state.get_state()[13]
+        if p1_score > p2_score:
+            return 1
+        elif p1_score < p2_score:
+            return -1
+        else:
+            return 0
+    
         
         
 if __name__ == "__main__":

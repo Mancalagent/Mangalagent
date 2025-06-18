@@ -21,15 +21,20 @@ class MCTSDataset(Dataset):
         self.value_targets = []
         
         self._process_trajectories(trajectories)
+        
+        
     
     def _process_trajectories(self, trajectories):
         """Process raw trajectories into training samples"""
         # Trajectories is a list of lists (one per game)
         for game_trajectories in trajectories:
             # Each game may have multiple trajectories (one per simulation)
+            # print(f"processing game {game_trajectories}")
             for trajectory in game_trajectories:
+                # print(f"processing trajectory {trajectory}")
                 # Each trajectory has tuples of (state, action, value)
                 for state, action, value in trajectory:
+                    # print(f"processing state {state}")
                     # Convert state to tensor (assuming state is board state)
                     if hasattr(state, 'get_state'):
                         board_state = state.get_state()
@@ -37,10 +42,14 @@ class MCTSDataset(Dataset):
                         board_state = state
                     self.states.append(torch.FloatTensor(board_state))
                     
-                    policy = action                   
-
-
-                    self.policy_targets.append(policy)
+                    # Action should be an integer index (0-5 for Mangala)
+                    # Ensure it's a valid integer action
+                    if isinstance(action, (int, np.integer)):
+                        policy_target = int(action)
+                    else:
+                        raise ValueError(f"Expected integer action, got {type(action)}: {action}")
+                    
+                    self.policy_targets.append(policy_target)
                     
                     # Store value target
                     self.value_targets.append(float(value))
@@ -52,10 +61,10 @@ class MCTSDataset(Dataset):
     def __getitem__(self, idx):
         """Get a sample by index"""
         return {
-            'state': self.states[idx],
-            'policy_target': self.policy_targets[idx],
-            'value_target': self.value_targets[idx]
-        }
+        "state"        : torch.as_tensor(self.states[idx], dtype=torch.float32),
+        "policy_target": torch.tensor(self.policy_targets[idx], dtype=torch.int64),
+        "value_target" : torch.tensor(self.value_targets[idx], dtype=torch.float32),
+    }
 
 
 def create_mcts_dataloader(trajectories, batch_size=64, shuffle=True):
@@ -87,6 +96,6 @@ def create_mcts_dataloader(trajectories, batch_size=64, shuffle=True):
         dataset,
         batch_size=min(batch_size, len(dataset)),  # Ensure batch size isn't larger than dataset
         shuffle=shuffle,
-        num_workers=2,  # Reduced worker count for debugging
+        num_workers=2,  
         pin_memory=True
     )

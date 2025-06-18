@@ -14,7 +14,8 @@ class MCTSTree:
         # print("root", self.root)
         
         
-        self.network = kwargs.get('network', None)
+        self.policy_network = kwargs.get('policy_network', None)
+        self.value_network = kwargs.get('value_network', None)
         
     
         
@@ -24,8 +25,12 @@ class MCTSTree:
         best_child = self._select(current_node, c_puct)
     
         
+        
         if best_child == -1:
             # print(f"best child is terminal state {best_child.get_state().get_state()}")
+            
+            r = current_node.get_outcome()
+            # print("hit terminal child with outcome", r)
             trajectories = self._backpropagate(r, best_child)
             return trajectories
         
@@ -67,7 +72,7 @@ class MCTSTree:
 
         
         while True:
-            # If node is terminal, return special value -1
+            # If node is terminal, return special value -1 
             if current_node.is_terminal():
                 return  -1
             
@@ -119,14 +124,14 @@ class MCTSTree:
         
     def _expand(self, current_node):
         
-        if self.network:
-           pass
-    
+        # if self.policy_network:
+        #     pass
+
                 
-        else:
-            # print("expanding to all possible children (UNIFORM PRIOR PROB)")
-            current_node.add_available_childen()
-            # print("parent edge", current_node.get_parent_edge())
+        # else:
+        # print("expanding to all possible children (UNIFORM PRIOR PROB)")
+        current_node.add_available_childen()
+        # print("parent edge", current_node.get_parent_edge())
         
     def _simulate(self,current_node):
         # print("simulating")
@@ -249,11 +254,12 @@ if __name__ == "__main__":
     trajectories_data = []
     
     tree = MCTSTree(init_state=state)
-    for i in range(2):
+    for i in range(10):
+        print(f"iteration {i}")
         trajectories = tree.run_iteration(c_puct=1.0)
         trajectories_data.append(trajectories)
-    print(trajectories_data)
-    tree.visualize_tree(tree.get_root(), 0, )
+   
+    # tree.visualize_tree(tree.get_root(), 0, 3)
     
     
     

@@ -19,7 +19,17 @@ class MCTS_Value_Network(nn.Module, metaclass=SingletonMeta):
         self.net = nn.Sequential(
             nn.Linear(input_dim, 128),
             nn.Tanh(),
-            nn.Linear(128, 128),
+            nn.Linear(128, 256),
+            nn.Tanh(),
+            nn.Linear(256, 512),
+            nn.Tanh(),
+            nn.Linear(512, 1024),
+            nn.Tanh(),
+            nn.Linear(1024, 512),
+            nn.Tanh(),
+            nn.Linear(512, 256),
+            nn.Tanh(),
+            nn.Linear(256, 128),
             nn.Tanh(),
             nn.Linear(128, 1),
             nn.Tanh()
@@ -39,7 +49,17 @@ class MCTS_Policy_Network(nn.Module, metaclass=SingletonMeta):
             self.net = nn.Sequential(
                 nn.Linear(input_dim, 128),
                 nn.Tanh(),
-                nn.Linear(128, 128),
+                nn.Linear(128, 256),
+                  nn.Tanh(),
+                nn.Linear(256, 512),
+                  nn.Tanh(),
+                nn.Linear(512, 1024),
+                  nn.Tanh(),
+                nn.Linear(1024, 512),
+                  nn.Tanh(),
+                nn.Linear(512, 256),
+                  nn.Tanh(),
+                nn.Linear(256, 128),
                 nn.Tanh(),
                 nn.Linear(128, output_dim)
             )
@@ -48,7 +68,7 @@ class MCTS_Policy_Network(nn.Module, metaclass=SingletonMeta):
             return self.net(x)
         
         def inference(self, x):
-            return F.softmax(self.forward(x), dim=1)
+            return F.softmax(self.forward(x))
         
         
         
