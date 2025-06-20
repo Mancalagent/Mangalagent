@@ -25,7 +25,8 @@ class HumanAgent(BaseAgent):
         # Always ask for input 0-5 regardless of player
         pit_index = int(input(f"Player {p_index}, choose a pit (0-5): "))
         print(f"Pit index: {pit_index}")
-        valid_actions = self.get_available_actions(state)
+        board, _ = state
+        valid_actions = self.get_available_actions(board)
         is_valid = False
         while not is_valid:
             pit_index = int(input(f"Choose a pit from {valid_actions}: "))
