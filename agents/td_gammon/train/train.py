@@ -13,6 +13,6 @@ if __name__ == '__main__':
         trace_decay=0.7,
     )
 
-    trainer.train(episodes=1000)
+    trainer.train(episodes=100_000)
     trainer.save_model(filepath=f"model.pth")
 

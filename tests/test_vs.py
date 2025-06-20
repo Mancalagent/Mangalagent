@@ -6,6 +6,8 @@ from agents.td_agent import TDAgent
 from agents.td_gammon import TDNetwork
 from mangala.mangala import Mangala
 from agents.mcts_agent import MCTSAgent
+from utils.util import Util
+
 
 def td_gammon_vs_random():
     weight_path = "/Users/omerislam/Desktop/Ömer/Koç/4th Year/Comp438/Mangalagent/agents/td_gammon/train/model.pth"
@@ -59,7 +61,11 @@ def human_vs_human():
     )
     
     game.start()
-    
+
+def td_w_mcst_vs_random():
+    tree = Util.load_tree()
+    agent1 = MCTSAgent(53, mcts_tree=tree)
+
 if __name__ == '__main__':
     # td_gammon_vs_random()
     #td_gammon_vs_human()
