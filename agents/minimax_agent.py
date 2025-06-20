@@ -5,7 +5,6 @@ from mangala.mangala import Mangala
 from utils.util import Util
 
 class MinimaxAgent(BaseAgent):
-    """Planning agent using minimax algorithm for Mangala"""
     def __init__(self, id, max_depth=5, verbose=False):
         super().__init__(id)
         self.max_depth = max_depth
@@ -15,44 +14,34 @@ class MinimaxAgent(BaseAgent):
         board, player_turn = state
         available_actions = self.get_available_actions(board)
         
-        # Safety check - always return a valid move
         if not available_actions:
-            return 0  # Default to first pit as fallback
+            return 0  
         if len(available_actions) == 1:
             return available_actions[0]
             
-        # Opening book - pit 2 or 3 are good first moves
         if sum(board) == 48 and board[6] == 0 and board[13] == 0:
-            # First move of the game
             if 2 in available_actions:
                 return 2
             elif 3 in available_actions:
                 return 3
         
-        # Use iterative deepening with time management for better move selection
-        best_action = available_actions[0]  # Default to first available action
+        best_action = available_actions[0]  
         best_value = float("-inf")
         alpha = float("-inf")
         beta = float("inf")
         
-        # Order moves for better alpha-beta pruning
         ordered_actions = self.order_moves(board, available_actions, True)
         
-        # Try each action and evaluate using minimax
         for action in ordered_actions:
             board_copy = board.copy()
             extra_turn = Mangala.check_for_extra_turn(board_copy, action)
             new_board, reward, is_terminal = Mangala.transition(board_copy, action)
             
-            # Calculate value of this move
             if is_terminal:
-                # If move leads to terminal state, evaluate directly
                 value = self.evaluate(new_board)
             elif extra_turn:
-                # If extra turn, remain as maximizer
                 value = reward * 10 + self.minimax(new_board, 0, alpha, beta, True)
             else:
-                # If no extra turn, opponent's perspective (minimizer)
                 value = reward * 10 + self.minimax(
                     Mangala.flip_board(new_board), 0, alpha, beta, False
                 )
@@ -60,26 +49,21 @@ class MinimaxAgent(BaseAgent):
             if self.verbose:
                 print(f"Action {action} has value {value}")
                 
-            # Update best action
             if value > best_value or (value == best_value and random.random() < 0.3):
                 best_value = value
                 best_action = action
                 
-            # Update alpha for alpha-beta pruning
             alpha = max(alpha, best_value)
             
-            # Early exit if we find a guaranteed win
             if best_value >= 1000:
                 break
         
         return best_action
         
     def order_moves(self, board, actions, is_maximizing):
-        """Order moves to improve alpha-beta pruning efficiency."""
         if not actions:
             return actions
             
-        # Score each move based on heuristics
         scored_moves = []
         for action in actions:
             score = 0

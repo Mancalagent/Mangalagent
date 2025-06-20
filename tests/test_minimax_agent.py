@@ -10,14 +10,6 @@ from agents.human_agent import HumanAgent
 from mangala.mangala import Mangala
 
 def test_minimax_vs_random(num_games=5, debug=False, max_depth=3):
-    """
-    Test the MinimaxAgent against a RandomAgent
-    
-    Args:
-        num_games: Number of games to play (will be rounded up to even number)
-        debug: Whether to print the board state during games or not
-        max_depth: Maximum depth for the minimax search
-    """
     # Ensure even number of games for balanced first/second player distribution
     num_games = max(2, num_games + num_games % 2)
     
@@ -212,9 +204,6 @@ def test_minimax_vs_random(num_games=5, debug=False, max_depth=3):
     return results
 
 def play_against_minimax():
-    """
-    Play against the MinimaxAgent as the user
-    """
     print("Play against MinimaxAgent!")
     print("You are Player 0, MinimaxAgent is Player 1")
     

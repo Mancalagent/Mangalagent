@@ -42,10 +42,8 @@ class TDTrainerMinimax:
                 actions = self.agent.get_available_actions(state)
 
                 if random.random() < epsilon:
-                    # Use Minimax for exploration
-                    action = self.minimax_agent.act((state, 0))  # Minimax expects (board, player_turn)
+                    action = self.minimax_agent.act((state, 0))  
                 else:
-                    # Use the network for exploitation
                     action = max(actions, key=lambda x: self.net(Mangala.transition(state, x)[0]).item())
 
                 if Mangala.check_for_extra_turn(state, action):
