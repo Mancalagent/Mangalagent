@@ -9,15 +9,13 @@ from agents.random_agent import RandomAgent
 from agents.human_agent import HumanAgent
 from mangala.mangala import Mangala
 
-def test_minimax_vs_random(num_games=5, debug=False, max_depth=3):
-    # Ensure even number of games for balanced first/second player distribution
+def test_minimax_vs_random(num_games=100, debug=False, max_depth=3):
     num_games = max(2, num_games + num_games % 2)
     
     print(f"\n{'='*50}")
     print(f"STARTING TEST: {num_games} games, Minimax depth={max_depth}")
     print(f"{'='*50}")
     
-    # Track overall results
     results = {
         'total': {
             'minimax_wins': 0,
@@ -39,18 +37,15 @@ def test_minimax_vs_random(num_games=5, debug=False, max_depth=3):
         }
     }
     
-    # Create agents
     minimax_agent = MinimaxAgent(id="MinimaxAgent", max_depth=max_depth, verbose=debug)
     random_agent = RandomAgent(id="RandomAgent")
     
-    # First half: Minimax as first player, second half: Minimax as second player
     games_per_condition = num_games // 2
     
     print(f"\n{'*'*30}")
     print(f"PHASE 1: Minimax as FIRST player ({games_per_condition} games)")
     print(f"{'*'*30}")
     
-    # Test with Minimax as first player
     for game_num in range(1, games_per_condition + 1):
         print(f"\n{'='*30}")
         print(f"GAME {game_num}/{games_per_condition} (Minimax first)")
@@ -64,7 +59,6 @@ def test_minimax_vs_random(num_games=5, debug=False, max_depth=3):
             winner = game.start(max_moves=200)
             end_time = time.time()
             
-            # Process results
             game_time = end_time - start_time
             move_count = game.move_count if hasattr(game, 'move_count') else 'unknown'
             
@@ -82,7 +76,6 @@ def test_minimax_vs_random(num_games=5, debug=False, max_depth=3):
                     results['total']['random_wins'] += 1
                     results['as_first']['losses'] += 1
             
-            # Store game stats
             print(f"Game completed in {game_time:.2f} seconds")
             results['total']['moves'].append(move_count)
             results['as_first']['moves'].append(move_count)
@@ -96,7 +89,6 @@ def test_minimax_vs_random(num_games=5, debug=False, max_depth=3):
     print(f"PHASE 2: Minimax as SECOND player ({games_per_condition} games)")
     print(f"{'*'*30}")
     
-    # Test with Minimax as second player
     for game_num in range(1, games_per_condition + 1):
         print(f"\n{'='*30}")
         print(f"GAME {game_num}/{games_per_condition} (Minimax second)")
@@ -110,7 +102,6 @@ def test_minimax_vs_random(num_games=5, debug=False, max_depth=3):
             winner = game.start(max_moves=200)
             end_time = time.time()
             
-            # Process results
             game_time = end_time - start_time
             move_count = game.move_count if hasattr(game, 'move_count') else 'unknown'
             
@@ -128,7 +119,6 @@ def test_minimax_vs_random(num_games=5, debug=False, max_depth=3):
                     results['total']['random_wins'] += 1
                     results['as_second']['losses'] += 1
             
-            # Store game stats
             print(f"Game completed in {game_time:.2f} seconds")
             results['total']['moves'].append(move_count)
             results['as_second']['moves'].append(move_count)
@@ -137,110 +127,81 @@ def test_minimax_vs_random(num_games=5, debug=False, max_depth=3):
             print(f"Error during game: {str(e)}")
             import traceback
             traceback.print_exc()
-            
-        except Exception as e:
-            print(f"Error during game: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            continue
-            
-    # Helper function to calculate average moves
-    def avg_moves(moves_list):
-        valid = [m for m in moves_list if isinstance(m, int)]
-        return sum(valid)/len(valid) if valid else 0
     
-    # Print detailed results
     print("\n" + "="*50)
     print("TEST COMPLETED")
-    print("="*50)
+    print("="*50 + "\n")
     
-    # Overall results
-    print("\nOVERALL RESULTS:")
-    print("-"*20)
+    print("OVERALL RESULTS:")
+    print("-" * 20)
     print(f"Total games: {num_games}")
     print(f"Minimax wins: {results['total']['minimax_wins']}")
     print(f"Random wins: {results['total']['random_wins']}")
     print(f"Draws: {results['total']['draws']}")
     
     if results['total']['moves']:
-        avg = avg_moves(results['total']['moves'])
-        print(f"Average moves per game: {avg:.1f}")
+        avg_moves = sum(results['total']['moves']) / len(results['total']['moves'])
+        print(f"Average moves per game: {avg_moves:.1f}")
     
-    win_rate = results['total']['minimax_wins'] / num_games * 100
-    print(f"\nOverall Minimax win rate: {win_rate:.1f}%")
+    print(f"\nOverall Minimax win rate: {results['total']['minimax_wins'] / num_games * 100:.1f}%")
     
-    # Results when Minimax is first
     print("\nMINIMAX AS FIRST PLAYER:")
-    print("-"*20)
-    games_as_first = games_per_condition
-    wins_as_first = results['as_first']['wins']
-    losses_as_first = results['as_first']['losses']
-    draws_as_first = results['as_first']['draws']
+    print("-" * 20)
+    total_games = len(results['as_first']['moves'])
+    if total_games > 0:
+        print(f"Wins: {results['as_first']['wins']}/{total_games} ({results['as_first']['wins'] / total_games * 100:.1f}%)")
+        print(f"Losses: {results['as_first']['losses']}/{total_games} ({results['as_first']['losses'] / total_games * 100:.1f}%)")
+        print(f"Draws: {results['as_first']['draws']}/{total_games} ({results['as_first']['draws'] / total_games * 100:.1f}%)")
+        
+        if results['as_first']['moves']:
+            avg_moves = sum(results['as_first']['moves']) / len(results['as_first']['moves'])
+            print(f"Average moves: {avg_moves:.1f}")
     
-    print(f"Wins: {wins_as_first}/{games_as_first} ({wins_as_first/games_as_first*100:.1f}%)")
-    print(f"Losses: {losses_as_first}/{games_as_first} ({losses_as_first/games_as_first*100:.1f}%)")
-    print(f"Draws: {draws_as_first}/{games_as_first} ({draws_as_first/games_as_first*100:.1f}%)")
-    if results['as_first']['moves']:
-        avg = avg_moves(results['as_first']['moves'])
-        print(f"Average moves: {avg:.1f}")
-    
-    # Results when Minimax is second
     print("\nMINIMAX AS SECOND PLAYER:")
-    print("-"*20)
-    games_as_second = games_per_condition
-    wins_as_second = results['as_second']['wins']
-    losses_as_second = results['as_second']['losses']
-    draws_as_second = results['as_second']['draws']
+    print("-" * 20)
+    total_games = len(results['as_second']['moves'])
+    if total_games > 0:
+        print(f"Wins: {results['as_second']['wins']}/{total_games} ({results['as_second']['wins'] / total_games * 100:.1f}%)")
+        print(f"Losses: {results['as_second']['losses']}/{total_games} ({results['as_second']['losses'] / total_games * 100:.1f}%)")
+        print(f"Draws: {results['as_second']['draws']}/{total_games} ({results['as_second']['draws'] / total_games * 100:.1f}%)")
+        
+        if results['as_second']['moves']:
+            avg_moves = sum(results['as_second']['moves']) / len(results['as_second']['moves'])
+            print(f"Average moves: {avg_moves:.1f}")
     
-    print(f"Wins: {wins_as_second}/{games_as_second} ({wins_as_second/games_as_second*100:.1f}%)")
-    print(f"Losses: {losses_as_second}/{games_as_second} ({losses_as_second/games_as_second*100:.1f}%)")
-    print(f"Draws: {draws_as_second}/{games_as_second} ({draws_as_second/games_second*100:.1f}%)")
-    if results['as_second']['moves']:
-        avg = avg_moves(results['as_second']['moves'])
-        print(f"Average moves: {avg:.1f}")
-    
-    print("="*50)
-    
+    print("\n" + "="*50)
     return results
 
 def play_against_minimax():
-    print("Play against MinimaxAgent!")
-    print("You are Player 0, MinimaxAgent is Player 1")
+    print("\n" + "="*50)
+    print("PLAYING AGAINST MINIMAX AGENT")
+    print("="*50 + "\n")
     
+    depth = int(input("Enter minimax depth (default 3): ") or 3)
+    human_first = input("Do you want to go first? (y/n, default y): ").lower() != 'n'
+    
+    minimax_agent = MinimaxAgent(id="MinimaxAgent", max_depth=depth, verbose=True)
     human_agent = HumanAgent(id="Human")
-    minimax_agent = MinimaxAgent(id="MinimaxAgent", max_depth=3)
-    game = Mangala(human_agent, minimax_agent, debug=True)
-    game.start()
-    winner = game.get_winner()
-    if winner == 2:
-        print("Game ended in a draw!")
-    elif winner == 0:
-        print("You win!")
+    
+    if human_first:
+        game = Mangala(human_agent, minimax_agent, debug=True)
     else:
-        print("MinimaxAgent wins!")
-        
-    print(f"Final scores - You: {game.board[6]}, MinimaxAgent: {game.board[13]}")
+        game = Mangala(minimax_agent, human_agent, debug=True)
+    
+    game.start()
 
 if __name__ == "__main__":
     import argparse
     
-    parser = argparse.ArgumentParser(description="Test the MinimaxAgent")
-    parser.add_argument("--mode", type=str, choices=["auto", "play"], default="auto",
-                        help="'auto' to watch games between MinimaxAgent and RandomAgent, 'play' to play against MinimaxAgent")
-    parser.add_argument("--games", type=int, default=10,
-                        help="Number of games to play in auto mode")
-    parser.add_argument("--debug", action="store_true",
-                        help="Print board state during games")
-    parser.add_argument("--max_depth", type=int, default=3,
-                        help="Maximum depth for minimax search")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--mode", choices=["auto", "play"], default="auto")
+    parser.add_argument("--games", type=int, default=100)
+    parser.add_argument("--debug", action="store_true")
+    parser.add_argument("--max_depth", type=int, default=3)
     
     args = parser.parse_args()
     
     if args.mode == "auto":
-        test_minimax_vs_random(
-            num_games=args.games, 
-            debug=args.debug, 
-            max_depth=args.max_depth
-        )
+        test_minimax_vs_random(num_games=args.games, debug=args.debug, max_depth=args.max_depth)
     else:
         play_against_minimax()
