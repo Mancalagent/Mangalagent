@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from tqdm.auto import tqdm
 import wandb
 from agents.mcts.mcts_network import MCTS_Policy_Network, MCTS_Value_Network
-from agents.mcts.train.mcts_dataset import create_mcts_dataloader
+from agents.mcts.train.mcts_dataset import create_mcts_dataloader, create_mcts_trajectory_dataloader
 
 class NetworkTrainer:
     """
@@ -411,6 +411,324 @@ class NetworkTrainer:
         
         self.policy_network.to(self.device)
         self.value_network.to(self.device)
+
+class NetworkTrajectoryTrainer:
+    """
+    Trajectory-based trainer for the MCTS policy and value networks.
+    Each batch contains complete trajectories (sequences) instead of individual samples.
+    """
+    def __init__(self, policy_lr=0.001, value_lr=0.0001, wandb_project="mcts-trajectory-training", 
+                 wandb_api_key=None, value_update_freq=2, policy_update_freq=1):
+        """
+        Initialize the trajectory-based network trainer.
+        
+        Args:
+            policy_lr: Learning rate for policy network
+            value_lr: Learning rate for value network
+            wandb_project: Weights & Biases project name
+            wandb_api_key: Weights & Biases API key (optional)
+            value_update_freq: How often to update value network
+            policy_update_freq: How often to update policy network
+        """
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        
+        # Initialize networks
+        self.policy_network = MCTS_Policy_Network(input_dim=14, output_dim=6)
+        self.value_network = MCTS_Value_Network(input_dim=14, output_dim=1)
+        self.policy_network.to(self.device)
+        self.value_network.to(self.device)
+        
+        # Initialize optimizers
+        self.policy_optimizer = optim.Adam(self.policy_network.parameters(), lr=policy_lr)
+        self.value_optimizer = optim.Adam(self.value_network.parameters(), lr=value_lr)
+        
+        # Loss functions
+        self.value_loss_fn = nn.MSELoss(reduction='none')  # No reduction for masking
+        
+        # Update frequencies
+        self.value_update_freq = value_update_freq
+        self.policy_update_freq = policy_update_freq
+        
+        # Initialize wandb
+        self.wandb_project = wandb_project
+        self.wandb_api_key = wandb_api_key
+    
+    def masked_reinforce_loss(self, policy_logits, actions, advantages, attention_mask):
+        """
+        Compute REINFORCE loss with masking for variable-length sequences.
+        
+        Args:
+            policy_logits: (batch_size, seq_len, num_actions)
+            actions: (batch_size, seq_len)
+            advantages: (batch_size, seq_len)
+            attention_mask: (batch_size, seq_len) - 1 for real tokens, 0 for padding
+            
+        Returns:
+            Scalar loss value
+        """
+        # Compute log probabilities
+        log_probs = F.log_softmax(policy_logits, dim=-1)  # (batch_size, seq_len, num_actions)
+        
+        # Gather log probabilities for selected actions
+        selected_log_probs = torch.gather(log_probs, 2, actions.unsqueeze(-1)).squeeze(-1)  # (batch_size, seq_len)
+        
+        # Normalize advantages within each sequence (only considering non-padded tokens)
+        advantages_normalized = torch.zeros_like(advantages)
+        for i in range(advantages.size(0)):
+            mask_i = attention_mask[i]
+            if mask_i.sum() > 1:  # More than one real token
+                real_advantages = advantages[i][mask_i]
+                normalized = (real_advantages - real_advantages.mean()) / (real_advantages.std() + 1e-8)
+                advantages_normalized[i][mask_i] = normalized
+            else:
+                advantages_normalized[i][mask_i] = advantages[i][mask_i]
+        
+        # Compute policy loss with masking
+        policy_loss_per_token = -selected_log_probs * advantages_normalized.detach()
+        
+        # Apply mask and compute mean only over real tokens
+        masked_loss = policy_loss_per_token * attention_mask.float()
+        total_loss = masked_loss.sum()
+        total_tokens = attention_mask.sum().float()
+        
+        return total_loss / (total_tokens + 1e-8)
+    
+    def masked_value_loss(self, value_preds, value_targets, attention_mask):
+        """
+        Compute value loss with masking for variable-length sequences.
+        
+        Args:
+            value_preds: (batch_size, seq_len, 1)
+            value_targets: (batch_size, seq_len)
+            attention_mask: (batch_size, seq_len)
+            
+        Returns:
+            Scalar loss value
+        """
+        # Squeeze value predictions to match targets
+        value_preds_squeezed = value_preds.squeeze(-1)  # (batch_size, seq_len)
+        
+        # Compute MSE loss per token
+        loss_per_token = self.value_loss_fn(value_preds_squeezed, value_targets)
+        
+        # Apply mask and compute mean only over real tokens
+        masked_loss = loss_per_token * attention_mask.float()
+        total_loss = masked_loss.sum()
+        total_tokens = attention_mask.sum().float()
+        
+        return total_loss / (total_tokens + 1e-8)
+    
+    def train(self, trajectories, epochs=10, batch_size=16, log_wandb=True):
+        """
+        Train the network on MCTS trajectories using trajectory-based batching.
+        
+        Args:
+            trajectories: List of trajectories from MCTS self-play
+            epochs: Number of training epochs
+            batch_size: Number of trajectories per batch
+            log_wandb: Whether to log metrics to Weights & Biases
+            
+        Returns:
+            Dictionary with training metrics
+        """
+        # Initialize wandb if logging is enabled
+        if log_wandb:
+            if self.wandb_api_key:
+                wandb.login(key=self.wandb_api_key)
+            
+            wandb.init(
+                project=self.wandb_project,
+                config={
+                    "epochs": epochs,
+                    "batch_size": batch_size,
+                    "policy_lr": self.policy_optimizer.param_groups[0]['lr'],
+                    "value_lr": self.value_optimizer.param_groups[0]['lr'],
+                    "value_update_freq": self.value_update_freq,
+                    "policy_update_freq": self.policy_update_freq,
+                    "device": str(self.device),
+                    "training_mode": "trajectory_based"
+                }
+            )
+        
+        # Create trajectory dataloader
+        dataloader = create_mcts_trajectory_dataloader(trajectories, batch_size=batch_size)
+        
+        metrics = {
+            'policy_loss': [],
+            'value_loss': [],
+            'total_loss': [],
+            'batch_policy_loss': [],
+            'batch_value_loss': [],
+            'batch_total_loss': [],
+            'batch_epochs': [],
+            'avg_trajectory_length': []
+        }
+        
+        # Create epoch progress bar
+        epoch_pbar = tqdm(range(epochs), desc="Training Epochs (Trajectory-based)", unit="epoch")
+        
+        # Track batch numbers for update frequency
+        global_batch_count = 0
+        
+        for epoch in epoch_pbar:
+            epoch_policy_loss = 0
+            epoch_value_loss = 0
+            epoch_total_loss = 0
+            batches = 0
+            policy_updates = 0
+            value_updates = 0
+            total_trajectory_length = 0
+            
+            # Create batch progress bar
+            batch_pbar = tqdm(dataloader, desc=f"Epoch {epoch+1}/{epochs}", 
+                             leave=False, unit="trajectory_batch")
+            
+            for batch in batch_pbar:
+                global_batch_count += 1
+                
+                # Move data to device
+                states = batch['states'].to(self.device)  # (batch_size, seq_len, state_dim)
+                actions = batch['actions'].to(self.device)  # (batch_size, seq_len)
+                values = batch['values'].to(self.device)  # (batch_size, seq_len)
+                attention_mask = batch['attention_mask'].to(self.device)  # (batch_size, seq_len)
+                lengths = batch['lengths']
+                
+                batch_size_actual, seq_len, state_dim = states.shape
+                
+                # Reshape for network processing: (batch_size * seq_len, state_dim)
+                states_flat = states.view(-1, state_dim)
+                
+                # Forward passes through networks
+                policy_logits_flat = self.policy_network(states_flat)  # (batch_size * seq_len, num_actions)
+                value_preds_flat = self.value_network(states_flat)  # (batch_size * seq_len, 1)
+                
+                # Reshape back to sequence format
+                policy_logits = policy_logits_flat.view(batch_size_actual, seq_len, -1)  # (batch_size, seq_len, num_actions)
+                value_preds = value_preds_flat.view(batch_size_actual, seq_len, -1)  # (batch_size, seq_len, 1)
+                
+                # Compute losses with masking
+                value_loss = self.masked_value_loss(value_preds, values, attention_mask)
+                advantage = (values - value_preds.squeeze(-1)).detach()  # TD error as advantage
+                
+                policy_loss = self.masked_reinforce_loss(
+                    policy_logits=policy_logits,
+                    actions=actions,
+                    advantages=advantage,
+                    attention_mask=attention_mask
+                )
+                
+                # Determine whether to update each network
+                update_value = (global_batch_count % self.value_update_freq == 0)
+                update_policy = (global_batch_count % self.policy_update_freq == 0)
+                
+                # VALUE NETWORK UPDATE
+                if update_value:
+                    self.value_optimizer.zero_grad()
+                    value_loss.backward(retain_graph=True)
+                    self.value_optimizer.step()
+                    value_updates += 1
+                
+                # POLICY NETWORK UPDATE
+                if update_policy:
+                    self.policy_optimizer.zero_grad()
+                    policy_loss.backward()
+                    self.policy_optimizer.step()
+                    policy_updates += 1
+                
+                # Track metrics
+                current_policy_loss = policy_loss.item()
+                current_value_loss = value_loss.item()
+                current_total_loss = current_policy_loss + current_value_loss
+                avg_traj_len = lengths.float().mean().item()
+                
+                # Store batch-level metrics
+                metrics['batch_policy_loss'].append(current_policy_loss)
+                metrics['batch_value_loss'].append(current_value_loss)
+                metrics['batch_total_loss'].append(current_total_loss)
+                metrics['batch_epochs'].append(epoch + 1)
+                
+                epoch_policy_loss += current_policy_loss
+                epoch_value_loss += current_value_loss
+                epoch_total_loss += current_total_loss
+                total_trajectory_length += avg_traj_len
+                batches += 1
+                
+                # Log batch-level metrics to wandb
+                if log_wandb:
+                    wandb.log({
+                        "batch": len(metrics['batch_policy_loss']),
+                        "epoch": epoch + 1,
+                        "batch_policy_loss": current_policy_loss,
+                        "batch_value_loss": current_value_loss,
+                        "batch_total_loss": current_total_loss,
+                        "avg_trajectory_length": avg_traj_len,
+                        "value_updated": update_value,
+                        "policy_updated": update_policy
+                    })
+                
+                # Update batch progress bar
+                batch_pbar.set_postfix({
+                    'policy_loss': f"{current_policy_loss:.4f}",
+                    'value_loss': f"{current_value_loss:.4f}",
+                    'total_loss': f"{current_total_loss:.4f}",
+                    'avg_len': f"{avg_traj_len:.1f}",
+                    'V_updates': value_updates,
+                    'P_updates': policy_updates
+                })
+            
+            # Average metrics for the epoch
+            if batches > 0:
+                avg_policy_loss = epoch_policy_loss / batches
+                avg_value_loss = epoch_value_loss / batches
+                avg_total_loss = epoch_total_loss / batches
+                avg_trajectory_length = total_trajectory_length / batches
+                
+                metrics['policy_loss'].append(avg_policy_loss)
+                metrics['value_loss'].append(avg_value_loss)
+                metrics['total_loss'].append(avg_total_loss)
+                metrics['avg_trajectory_length'].append(avg_trajectory_length)
+                
+                # Log epoch-level metrics to wandb
+                if log_wandb:
+                    wandb.log({
+                        "epoch_policy_loss": avg_policy_loss,
+                        "epoch_value_loss": avg_value_loss,
+                        "epoch_total_loss": avg_total_loss,
+                        "epoch_avg_trajectory_length": avg_trajectory_length
+                    })
+                
+                # Update epoch progress bar
+                epoch_pbar.set_postfix({
+                    'policy_loss': f"{avg_policy_loss:.4f}",
+                    'value_loss': f"{avg_value_loss:.4f}",
+                    'total_loss': f"{avg_total_loss:.4f}",
+                    'avg_len': f"{avg_trajectory_length:.1f}"
+                })
+        
+        if log_wandb:
+            wandb.finish()
+        
+        return metrics
+    
+    def save_model(self, path):
+        """Save both policy and value networks"""
+        checkpoint = {
+            'policy_network': self.policy_network.state_dict(),
+            'value_network': self.value_network.state_dict(),
+            'policy_optimizer': self.policy_optimizer.state_dict(),
+            'value_optimizer': self.value_optimizer.state_dict(),
+        }
+        torch.save(checkpoint, path)
+        print(f"Trajectory-based model saved to {path}")
+    
+    def load_model(self, path):
+        """Load both policy and value networks"""
+        checkpoint = torch.load(path, map_location=self.device)
+        self.policy_network.load_state_dict(checkpoint['policy_network'])
+        self.value_network.load_state_dict(checkpoint['value_network'])
+        self.policy_optimizer.load_state_dict(checkpoint['policy_optimizer'])
+        self.value_optimizer.load_state_dict(checkpoint['value_optimizer'])
+        print(f"Trajectory-based model loaded from {path}")
 
 
 

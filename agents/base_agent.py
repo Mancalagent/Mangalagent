@@ -22,7 +22,8 @@ class BaseAgent:
         return self.game_state
 
     def get_available_actions(self, state):
-        board = state
+   
+        board = state[0]
         return [i for i in range(6) if board[i] > 0]
 
     def __str__(self):

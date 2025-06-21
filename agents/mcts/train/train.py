@@ -6,7 +6,7 @@ import json
 from datetime import datetime
 from tqdm.auto import tqdm
 from agents.mcts.train.mcts_trainer import MCTSTrainer
-from agents.mcts.train.network_trainer import NetworkTrainer
+from agents.mcts.train.network_trainer import NetworkTrainer, NetworkTrajectoryTrainer
 
 def format_trajectory_filename(filepath, num_games=None):
     """
@@ -134,27 +134,44 @@ def main(args):
         total_samples = sum(len(traj) for game_traj in trajectories for traj in game_traj)
         print(f"Training with {total_samples} total samples from {len(trajectories)} games.")
     
-    # Initialize network trainer
-    network_trainer = NetworkTrainer(
-        policy_lr=args.policy_lr,
-        value_lr=args.value_lr,
-        wandb_project=args.wandb_project,
-        wandb_api_key=args.wandb_api_key,
-        value_update_freq=getattr(args, 'value_update_freq', 2),
-        policy_update_freq=getattr(args, 'policy_update_freq', 1)
-    )
+    # Initialize network trainer based on training mode
+    if getattr(args, 'trajectory_based', False):
+        print("Using trajectory-based training...")
+        network_trainer = NetworkTrajectoryTrainer(
+            policy_lr=args.policy_lr,
+            value_lr=args.value_lr,
+            wandb_project=args.wandb_project + "-trajectory",
+            wandb_api_key=args.wandb_api_key,
+            value_update_freq=getattr(args, 'value_update_freq', 2),
+            policy_update_freq=getattr(args, 'policy_update_freq', 1)
+        )
+        # Use smaller default batch size for trajectory training (trajectories per batch)
+        effective_batch_size = getattr(args, 'trajectory_batch_size', 16)
+    else:
+        print("Using standard (sample-based) training...")
+        network_trainer = NetworkTrainer(
+            policy_lr=args.policy_lr,
+            value_lr=args.value_lr,
+            wandb_project=args.wandb_project,
+            wandb_api_key=args.wandb_api_key,
+            value_update_freq=getattr(args, 'value_update_freq', 2),
+            policy_update_freq=getattr(args, 'policy_update_freq', 1)
+        )
+        effective_batch_size = args.batch_size
     
     # Train the network
-    print(f"Training network for {args.epochs} epochs...")
+    training_mode = "trajectory-based" if getattr(args, 'trajectory_based', False) else "sample-based"
+    print(f"Training network for {args.epochs} epochs using {training_mode} approach...")
     metrics = network_trainer.train(
         trajectories=trajectories,
         epochs=args.epochs,
-        batch_size=args.batch_size,
+        batch_size=effective_batch_size,
         log_wandb=args.log_wandb
     )
     
-    # Save the trained model
-    model_path = os.path.join(args.output_dir, "mcts_model.pt")
+    # Save the trained model with appropriate naming
+    model_suffix = "_trajectory" if getattr(args, 'trajectory_based', False) else "_standard"
+    model_path = os.path.join(args.output_dir, f"mcts_model{model_suffix}.pt")
     network_trainer.save_model(model_path)
     print(f"Model saved to {model_path}")
     
@@ -186,15 +203,23 @@ if __name__ == "__main__":
     parser.add_argument("--load-trajectories", action="store_true", help="Load trajectories from file")
     parser.add_argument("--save-trajectories", action="store_true", help="Save trajectories to file")
     parser.add_argument("--plot-batch-losses", action="store_true", help="Plot batch-level losses instead of epoch-level")
+    parser.add_argument("--trajectory-based", action="store_true", help="Use trajectory-based training instead of sample-based")
+    parser.add_argument("--trajectory-batch-size", type=int, default=16, help="Number of trajectories per batch (only for trajectory-based training)")
     
     # example usage:
     # Basic training:
     # python train.py --mcts-games 100 --epochs 10 --batch-size 64 --policy-lr 0.001 --value-lr 0.0001 --output-dir "models" --plot-losses --wandb-project "my-project"
     
-    # Generate and save trajectories, then train:
-    # python train.py --mcts-games 1000 --save-trajectories --epochs 15 --output-dir "models/saved_traj"
+    # TRAJECTORY-BASED TRAINING (NEW APPROACH):
+    # python train.py --mcts-games 100 --epochs 10 --trajectory-based --trajectory-batch-size 16 --output-dir "models/trajectory_exp"
     
-    # Load existing trajectories and train:
+    # Generate and save trajectories, then train with trajectory-based approach:
+    # python train.py --mcts-games 1000 --save-trajectories --epochs 15 --trajectory-based --output-dir "models/trajectory_saved"
+    
+    # Load existing trajectories and train with trajectory-based approach:
+    # python train.py --load-trajectories --trajectories-file "models/saved_traj/trajectories_1000games_20241215_143022.pkl" --epochs 20 --trajectory-based --trajectory-batch-size 8 --output-dir "models/trajectory_hp_exp"
+    
+    # Standard (sample-based) training:
     # python train.py --load-trajectories --trajectories-file "models/saved_traj/trajectories_1000games_20241215_143022.pkl" --epochs 20 --policy-lr 0.01 --value-lr 0.001 --output-dir "models/hp_exp1"
     
     # Train with different update frequencies and batch-level plotting:
@@ -295,6 +320,29 @@ python train.py --mcts-games 2000 --batch-size 512 --epochs 30 --policy-lr 0.01 
 
 # Production Training Pipeline:
 # ------------------------------
+
+# Step 1: Generate production dataset
+
+# TRAJECTORY-BASED TRAINING EXAMPLES:
+# ====================================
+
+# 21. Basic trajectory-based training
+python train.py --mcts-games 100 --epochs 10 --trajectory-based --trajectory-batch-size 16 --output-dir "models/trajectory_basic"
+
+# 22. Trajectory-based training with smaller batch size for memory efficiency
+python train.py --mcts-games 500 --epochs 20 --trajectory-based --trajectory-batch-size 8 --output-dir "models/trajectory_memory_efficient"
+
+# 23. Compare trajectory vs sample-based training on same data
+python train.py --mcts-games 1000 --save-trajectories --epochs 15 --output-dir "comparison/data_generation"
+python train.py --load-trajectories --trajectories-file "comparison/data_generation/trajectories_1000games.pkl" --epochs 30 --trajectory-based --trajectory-batch-size 16 --output-dir "comparison/trajectory_method"
+python train.py --load-trajectories --trajectories-file "comparison/data_generation/trajectories_1000games.pkl" --epochs 30 --batch-size 64 --output-dir "comparison/sample_method"
+
+# 24. Trajectory-based training with custom hyperparameters
+python train.py --load-trajectories --trajectories-file "models/saved_traj/trajectories_1000games.pkl" --trajectory-based --trajectory-batch-size 12 --policy-lr 0.005 --value-lr 0.0005 --value-update-freq 1 --policy-update-freq 2 --epochs 40 --output-dir "models/trajectory_custom_hp"
+
+# 25. Large-scale trajectory-based training
+python train.py --mcts-games 3000 --save-trajectories --epochs 1 --output-dir "models/large_trajectory_dataset"
+python train.py --load-trajectories --trajectories-file "models/large_trajectory_dataset/trajectories_3000games.pkl" --trajectory-based --trajectory-batch-size 32 --epochs 100 --wandb-project "large-trajectory-experiment" --output-dir "models/large_trajectory_training"
 
 # Step 1: Generate production dataset
 python train.py --mcts-games 10000 --save-trajectories --epochs 1 --output-dir "production/data_generation"
