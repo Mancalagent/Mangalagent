@@ -41,10 +41,11 @@ class TDTrainerMinimax:
 
                 actions = self.agent.get_available_actions(state)
 
+                # Epsilon-greedy: explore with random move, exploit with Minimax - more tests needed
                 if random.random() < epsilon:
-                    action = self.minimax_agent.act((state, 0))  
+                    action = random.choice(actions)
                 else:
-                    action = max(actions, key=lambda x: self.net(Mangala.transition(state, x)[0]).item())
+                    action = self.minimax_agent.act((state, 0))
 
                 if Mangala.check_for_extra_turn(state, action):
                     flip = True

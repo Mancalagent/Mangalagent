@@ -9,6 +9,28 @@ class MinimaxAgent(BaseAgent):
         super().__init__(id)
         self.max_depth = max_depth
         self.verbose = verbose
+        self.nodes_evaluated = 0
+        self.cache = {}  # For transposition table
+        
+    def _is_capture_move(self, board, action):
+        """Check if a move results in a capture."""
+        if board[action] == 0:
+            return False
+            
+        # Simulate the move
+        last_pit = (action + board[action]) % 14
+        
+        # Check if landing in an empty pit on player's side
+        if 0 <= last_pit < 6 and board[last_pit] == 0:
+            opposite_pit = 12 - last_pit
+            if 0 < opposite_pit < 6 and board[opposite_pit] > 0:
+                return True
+                
+        # Check for even capture on opponent's side
+        if 7 <= last_pit < 13 and board[last_pit] % 2 == 0:
+            return True
+            
+        return False
         
     def act(self, state):
         board, player_turn = state
@@ -65,48 +87,82 @@ class MinimaxAgent(BaseAgent):
             return actions
             
         scored_moves = []
+        player_store = 6 if is_maximizing else 13
+        
         for action in actions:
             score = 0
             
-            # Extra turns are very good for us, bad for opponent
+            # 1. Extra turns are extremely valuable
             if Mangala.check_for_extra_turn(board, action):
-                score += 1000 if is_maximizing else -1000
-                
-            # Captures are good
+                score += 5000 if is_maximizing else -5000
+            
+            # 2. Check for immediate wins
             new_board = board.copy()
             last_pit = (action + new_board[action]) % 14
+            
+            # 3. Capture opportunities
             if (0 <= last_pit < 6 and new_board[last_pit] == 0 and 
                 new_board[12 - last_pit] > 0):
-                score += 50 + new_board[12 - last_pit] * 10
-                
-            # Moving stones closer to store is generally good
+                # The more stones we can capture, the better
+                captured = new_board[12 - last_pit]
+                score += 100 + captured * 15
+            
+            # 4. Positional advantages
             if action <= 5:  # Only for player's side
-                score += (6 - action) * 2
+                # Prefer moves that move stones toward the store
+                score += (6 - action) * 3
                 
+                # Prefer moves that empty pits with few stones
+                if 0 < board[action] < 3:
+                    score += 5 - board[action]
+            
+            # 5. Deny opponent opportunities
+            opponent_store = 13 if is_maximizing else 6
+            if board[action] > 0:
+                # Calculate if this move could give opponent a good response
+                potential_landing = (action + board[action]) % 14
+                if potential_landing in range(7, 13):
+                    if board[potential_landing] == 0:  # Opponent could capture
+                        score -= 30
+            
             scored_moves.append((score, action))
         
         # Sort by score (descending for maximizer, ascending for minimizer)
         scored_moves.sort(reverse=is_maximizing, key=lambda x: x[0])
-        return [move[1] for move in scored_moves]
+        
+        # Return only the top 3 moves to focus search on most promising paths
+        top_n = min(3, len(scored_moves))
+        return [move[1] for move in scored_moves[:top_n]]
     
     def minimax(self, board, depth, alpha, beta, is_maximizing):
-        # Debug output
-        if self.verbose and depth <= 1:  # Only show top few depths to avoid too much output
-            print(f"{'  ' * depth}Depth {depth}: {'Max' if is_maximizing else 'Min'}, Alpha: {alpha}, Beta: {beta}")
-            
-        # Check for terminal state or max depth
+        self.nodes_evaluated += 1
+        
+        # Check for terminal state first
         if Mangala.check_terminal(board):
-            val = self.evaluate(board)
-            if self.verbose and depth <= 1:
-                print(f"{'  ' * depth}Terminal state, value: {val}")
-            return val
+            return self.evaluate(board)
             
+        # Check transposition table
+        board_tuple = tuple(board)
+        if (board_tuple, depth, is_maximizing) in self.cache:
+            return self.cache[(board_tuple, depth, is_maximizing)]
+            
+        # Quiescence search - don't stop at max depth if the position is unstable
         available_actions = self.get_available_actions(board)
-        if not available_actions or depth >= self.max_depth:
-            val = self.evaluate(board)
-            if self.verbose and depth <= 1:
-                print(f"{'  ' * depth}Max depth or no actions, value: {val}")
-            return val
+        if not available_actions:
+            return self.evaluate(board)
+            
+        # Check max depth, but allow searching deeper in forced lines
+        if depth >= self.max_depth * 2:  # Increased max depth for quiescence search
+            return self.evaluate(board)
+            
+        if depth >= self.max_depth:
+            # If there are captures or extra turns available, search deeper
+            has_forced = any(Mangala.check_for_extra_turn(board, a) or 
+                           self._is_capture_move(board, a) for a in available_actions)
+            
+            if not has_forced:
+                return self.evaluate(board)
+            # Else continue searching with increased depth limit
         
         # Order moves for better alpha-beta pruning
         ordered_actions = self.order_moves(board, available_actions, is_maximizing)
@@ -173,14 +229,14 @@ class MinimaxAgent(BaseAgent):
             player_total = board[player_store] + sum(board[0:6])
             opponent_total = board[opponent_store] + sum(board[7:13])
             if player_total > opponent_total:
-                return 1000  # Big win
+                return 10000  # Big win
             elif player_total < opponent_total:
-                return -1000  # Big loss
+                return -10000  # Big loss
             else:
                 return 0  # Draw
         
-        # 1. Store difference (most important)
-        store_diff = board[player_store] - board[opponent_store]
+        # 1. Store difference (most important) - heavily weighted
+        store_diff = (board[player_store] - board[opponent_store]) * 5
         
         # 2. Stone count difference (material advantage)
         player_stones = sum(board[0:6])
@@ -193,11 +249,12 @@ class MinimaxAgent(BaseAgent):
         # a. Extra turn potential (very valuable)
         for i in range(6):
             if board[i] == (6 - i):  # Exact landing in store
-                position_value += 15  # Increased from 8
+                position_value += 20  # Increased value for extra turns
         
-        # b. Capture opportunities
+        # b. Capture opportunities and mobility
         for i in range(6):
-            if board[i] == 0:  # Empty pit
+            # Empty pit with capture potential
+            if board[i] == 0:
                 opposite = 12 - i
                 if 0 < board[opposite] <= 5:  # Can capture with the right move
                     position_value += 5 + board[opposite]  # Higher reward for more stones
