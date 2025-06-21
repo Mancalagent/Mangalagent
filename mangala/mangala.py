@@ -182,73 +182,15 @@ class Mangala:
         return board
 
 
-    def start(self, max_moves=200):
-        """Start the game with a move limit to prevent infinite games.
-        
-        Args:
-            max_moves: Maximum number of moves before the game is declared a draw
-            
-        Returns:
-            int: 0 if player 0 wins, 1 if player 1 wins, 2 if it's a draw
-        """
-        move_count = 0
-        
-        while not self.game_over and move_count < max_moves:
-            move_count += 1
+    def start(self):
+        while not self.game_over:
             current_agent = self.agent0 if self.player_turn == 0 else self.agent1
-            
             if self.debug:
-                print(f"\nMove {move_count} - Player {self.player_turn}'s turn")
                 self.display_board()
-                
-            try:
-                move = current_agent.act((self.board, self.player_turn))
+            move = current_agent.act((self.board, self.player_turn))
+            self.make_move(move)
+            if self.game_over:
                 if self.debug:
-                    print(f"Player {self.player_turn} chooses move: {move}")
-                self.make_move(move)
-                
-                if self.game_over:
-                    winner = self.get_winner()
-                    if self.debug:
-                        print("\n" + "="*50)
-                        print(f"Game over after {move_count} moves!")
-                        print(f"Player {winner} wins!")
-                        print(f"Player 0 score: {self.board[6]}")
-                        print(f"Player 1 score: {self.board[13]}")
-                        print("="*50)
-                    return winner
-                    
-            except Exception as e:
-                print(f"Error during move {move_count}: {str(e)}")
-                # In case of error, just make a random move
-                import random
-                valid_moves = [i for i, stones in enumerate(self.board[:6] if self.player_turn == 0 else self.board[7:13], 
-                                                          start=0 if self.player_turn == 0 else 7) if stones > 0]
-                if valid_moves:
-                    move = random.choice(valid_moves)
-                    print(f"Falling back to random move: {move}")
-                    self.make_move(move)
-        
-        # If we get here, the game didn't end naturally
-        if not self.game_over:
-            print(f"\nGame stopped after reaching maximum of {max_moves} moves")
-            # Count stones to determine winner
-            p0_score = self.board[6] + sum(self.board[0:6])
-            p1_score = self.board[13] + sum(self.board[7:13])
-            
-            if p0_score > p1_score:
-                winner = 0
-            elif p1_score > p0_score:
-                winner = 1
-            else:
-                winner = 2  # Draw
-                
-            if self.debug:
-                print("\n" + "="*50)
-                print("Game ended by move limit!")
-                print(f"Player 0 total: {p0_score}")
-                print(f"Player 1 total: {p1_score}")
-                print(f"Player {winner} wins!" if winner != 2 else "It's a draw!")
-                print("="*50)
-                
-            return winner
+                    print(f"Game over! Player {self.get_winner()} wins!")
+                    print(f"Player 0 score: {self.board[6]}")
+                    print(f"Player 1 score: {self.board[13]}")
