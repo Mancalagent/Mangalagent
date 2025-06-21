@@ -15,4 +15,3 @@ if __name__ == '__main__':
 
     trainer.train(episodes=100_000)
     trainer.save_model(filepath=f"model.pth")
-
