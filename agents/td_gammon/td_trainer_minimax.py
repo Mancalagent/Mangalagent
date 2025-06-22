@@ -12,19 +12,21 @@ from agents.minimax_agent import MinimaxAgent
 class TDTrainerMinimax:
     def __init__(self, agent, network, learning_rate=0.01, discount_factor=0.9,
                  trace_decay=0.7, minimax_depth=5):
+        self.device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
         self.agent = agent
         self.learning_rate = learning_rate
         self.discount_factor = discount_factor
         self.trace_decay = trace_decay
         if not network:
-            self.net = TDNetwork()
+            self.net = TDNetwork().to(self.device)
         else:
-            self.net = network
+            self.net = network.to(self.device)
         self.optimizer = optim.Adam(self.net.parameters(), lr=self.learning_rate)
         self.minimax_agent = MinimaxAgent(id=99, max_depth=minimax_depth)
 
     def train(self, episodes):
         losses = []
+
         for episode in range(episodes):
             state = [4] * 14
             state[6] = 0
@@ -33,26 +35,24 @@ class TDTrainerMinimax:
             flip = False
             done = False
             episode_loss = 0.0
-            epsilon = max(0.1, 0.6 - episode / episodes)
+            print(f"Episode {episode + 1}/{episodes}")
             while not done:
                 if flip:
                     state = Mangala.flip_board(state)
                     flip = False
 
-                actions = self.agent.get_available_actions(state)
-
-                if random.random() < epsilon:
-                    action = self.minimax_agent.act((state, 0))  
-                else:
-                    action = max(actions, key=lambda x: self.net(Mangala.transition(state, x)[0]).item())
+                action = self.minimax_agent.act((state, 0))
 
                 if Mangala.check_for_extra_turn(state, action):
                     flip = True
+                if isinstance(state,torch.Tensor):
+                    state = state.cpu().numpy().tolist()
 
                 next_state, reward, is_terminal = Mangala.transition(state, action)
                 if is_terminal:
                     done = True
-
+                state = torch.tensor(state, dtype=torch.float32).to(self.device)
+                next_state = torch.tensor(next_state, dtype=torch.float32).to(self.device)
                 v = self.net(state)
                 v_next = self.net(next_state)
 

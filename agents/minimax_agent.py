@@ -1,5 +1,7 @@
 import random
 import numpy as np
+import torch
+
 from agents.base_agent import BaseAgent
 from mangala.mangala import Mangala
 from utils.util import Util
@@ -33,6 +35,8 @@ class MinimaxAgent(BaseAgent):
         ordered_actions = self.order_moves(board, available_actions, True)
         
         for action in ordered_actions:
+            if isinstance(board, torch.Tensor):
+                board = board.cpu().numpy().tolist()
             board_copy = board.copy()
             extra_turn = Mangala.check_for_extra_turn(board_copy, action)
             new_board, reward, is_terminal = Mangala.transition(board_copy, action)
@@ -71,10 +75,12 @@ class MinimaxAgent(BaseAgent):
             # Extra turns are very good for us, bad for opponent
             if Mangala.check_for_extra_turn(board, action):
                 score += 1000 if is_maximizing else -1000
-                
+
+            if isinstance(board,torch.Tensor):
+                board = board.cpu().numpy().tolist()
             # Captures are good
             new_board = board.copy()
-            last_pit = (action + new_board[action]) % 14
+            last_pit = (action + int(new_board[action])) % 14
             if (0 <= last_pit < 6 and new_board[last_pit] == 0 and 
                 new_board[12 - last_pit] > 0):
                 score += 50 + new_board[12 - last_pit] * 10

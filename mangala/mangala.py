@@ -1,3 +1,5 @@
+import torch
+
 from agents.base_agent import BaseAgent
 from utils.util import Util
 
@@ -175,6 +177,8 @@ class Mangala:
         self.extra_turn = False
     @classmethod
     def flip_board(cls,board):
+        if isinstance(board, torch.Tensor):
+            board = board.cpu().numpy().tolist()
         board = board.copy()
         board_1 = board[0:7]
         board_2 = board[7:14]

@@ -7,7 +7,7 @@ if __name__ == '__main__':
     os.makedirs('models', exist_ok=True)
 
     agent0 = BaseAgent(id=53)
-    minimax_depth = 15
+    minimax_depth = 10
     trainer = TDTrainerMinimax(
         agent=agent0,
         network=None,
@@ -19,9 +19,10 @@ if __name__ == '__main__':
 
     # Train the model
     print(f"Starting training with Minimax (depth={minimax_depth}) exploration...")
-    trainer.train(episodes=1000)
+    trainer.train(episodes=100)
 
     # Save the trained model
     model_path = f'models/td_gammon_minimax_model_depth{minimax_depth}.pth'
     trainer.save_model(filepath=model_path)
     print(f"\nTraining complete! Model saved to {model_path}")
+
