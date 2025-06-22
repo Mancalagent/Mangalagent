@@ -4,10 +4,11 @@ import random
 import matplotlib
 import torch
 
+from mangala.mangala import Mangala
+
 matplotlib.use('TkAgg')
 from torch import optim
 
-from mangala.mangala import Mangala
 from . import TDNetwork
 
 

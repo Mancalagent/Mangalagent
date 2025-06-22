@@ -241,6 +241,57 @@ class MCTSTree:
             # Recursively visualize child
             self.visualize_tree(child, depth + 1, max_depth, action)
 
+    @classmethod
+    def save_tree(cls, tree, file_path='mcts_tree.json'):
+        """
+        Save the MCTS tree to a JSON file using pickle serialization.
+
+        Args:
+            file_path: Path to save the JSON file.
+        """
+        try:
+            # Serialize the MCTS tree using pickle
+            serialized_tree = pickle.dumps(tree)
+
+            # Convert the serialized data to a JSON-compatible format (base64 encoding)
+            encoded_tree = base64.b64encode(serialized_tree).decode('utf-8')
+
+            # Save the encoded tree to a JSON file
+            with open(file_path, 'w') as json_file:
+                json.dump({'mcts_tree': encoded_tree}, json_file)
+
+            print(f"MCTS tree saved to {file_path}")
+        except Exception as e:
+            print(f"Error saving MCTS tree: {e}")
+
+    @classmethod
+    def load_tree(cls, file_path='mcts_tree.json'):
+        """
+        Load the MCTS tree from a JSON file.
+
+        Args:
+            file_path: Path to the JSON file containing the MCTS tree.
+
+        Returns:
+            An instance of MCTSTree.
+        """
+        try:
+            with open(file_path, 'r') as json_file:
+                data = json.load(json_file)
+                encoded_tree = data['mcts_tree']
+
+                # Decode the base64 encoded tree
+                serialized_tree = base64.b64decode(encoded_tree)
+
+                # Deserialize the MCTS tree using pickle
+                tree = pickle.loads(serialized_tree)
+
+                print(f"MCTS tree loaded from {file_path}")
+                return tree
+        except Exception as e:
+            print(f"Error loading MCTS tree: {e}")
+            return None
+
 
 
 
