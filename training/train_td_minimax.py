@@ -7,7 +7,7 @@ if __name__ == '__main__':
     os.makedirs('models', exist_ok=True)
 
     agent0 = BaseAgent(id=53)
-    minimax_depth = 15
+    minimax_depth = 3
     trainer = TDTrainerMinimax(
         agent=agent0,
         network=None,

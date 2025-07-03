@@ -10,7 +10,7 @@ from utils.util import Util
 
 
 def td_gammon_vs_random():
-    weight_path = "/Users/omerislam/Desktop/Ömer/Koç/4th Year/Comp438/Mangalagent/agents/td_gammon/train/model.pth"
+    weight_path = "/Users/omerislam/Desktop/Ömer/Koç/4th Year/Comp438/Mangalagent/training/models/td_gammon_minimax_model_depth7.pth"
     network = TDNetwork()
     network.load_state_dict(torch.load(weight_path))
     agent0 = TDAgent(53, network)
@@ -67,8 +67,8 @@ def td_w_mcst_vs_random():
     agent1 = MCTSAgent(53, mcts_tree=tree)
 
 if __name__ == '__main__':
-    # td_gammon_vs_random()
+    td_gammon_vs_random()
     #td_gammon_vs_human()
     # mcts_vs_random()
-    human_vs_human()
+    #human_vs_human()
     # pass
