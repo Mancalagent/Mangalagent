@@ -9,7 +9,7 @@ def test_td_minimax_vs_random(num_games=100, minimax_depth=5):
     print(f"Testing TD-Gammon (Minimax trained) vs Random agent for {num_games} games...")
 
     # Load the trained model
-    model_path = f"models/td_gammon_minimax_model_depth{minimax_depth}.pth"
+    model_path = "/Users/omerislam/Desktop/Ömer/Koç/4th Year/Comp438/Mangalagent/training/models/depth5_it10000.pth"  # Adjust the path as necessary
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"Model not found at {model_path}. Please run the training script first.")
 
