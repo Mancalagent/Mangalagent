@@ -19,7 +19,7 @@ if __name__ == '__main__':
 
     # Train the model
     print(f"Starting training with Minimax (depth={minimax_depth}) exploration...")
-    trainer.train(episodes=1000)
+    trainer.train(episodes=100_000)
 
     # Save the trained model
     model_path = f'models/td_gammon_minimax_model_depth{minimax_depth}.pth'
