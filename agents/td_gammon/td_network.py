@@ -6,7 +6,9 @@ class TDNetwork(nn.Module):
     def __init__(self, input_size=14, hidden_size=256):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(input_size, 64),
+            nn.Linear(14, 64),
+            nn.Tanh(),
+            nn.Linear(64, 64),
             nn.Tanh(),
             nn.Linear(64, 32),
             nn.Tanh(),

@@ -35,7 +35,8 @@ class TDTrainer:
             flip = False
             done = False
             episode_loss = 0.0
-            epsilon = max(0.1, 0.6 - episode / episodes)
+            epsilon = 0.8 if episode < episodes*0.2 else 0.1
+            print(f"Episode {episode + 1}/{episodes}, Epsilon: {epsilon:.2f}")
             while not done:
                 if flip:
                     state = Mangala.flip_board(state)

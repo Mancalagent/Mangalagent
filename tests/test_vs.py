@@ -10,12 +10,12 @@ from utils.util import Util
 
 
 def td_gammon_vs_random():
-    weight_path = "/Users/omerislam/Desktop/Ömer/Koç/4th Year/Comp438/Mangalagent/training/models/depth5_it10000.pth"
+    weight_path = "/Users/omerislam/Desktop/Ömer/Koç/4th Year/Comp438/Mangalagent/agents/td_gammon/train/model.pth"
     network = TDNetwork()
     network.load_state_dict(torch.load(weight_path))
     agent0 = TDAgent(53, network)
     agent1 = RandomAgent(34)
-    game_count = 1000
+    game_count = 100
     win = 0
     for i in range(game_count):
         print(f"Game {i+1}/{game_count}")
@@ -67,25 +67,27 @@ def td_w_mcst_vs_random():
     agent1 = MCTSAgent(53, mcts_tree=tree)
 
 def state_test():
-    weight_path = "/Users/omerislam/Desktop/Ömer/Koç/4th Year/Comp438/Mangalagent/training/models/depth5_it10000.pth"
+
+    weight_path = "/Users/omerislam/Desktop/Ömer/Koç/4th Year/Comp438/Mangalagent/agents/td_gammon/train/model.pth"
     network = TDNetwork()
     network.load_state_dict(torch.load(weight_path))
     agent0 = TDAgent(53, network)
     agent1 = RandomAgent(34)
 
-    state = [1, 1, 1, 1, 4, 5, 1,
-             1, 0, 0, 0, 0, 0, 2]
+    state = [0, 0, 0, 1, 0, 1, 1,
+             1, 1, 1, 1, 1, 0, 4]
     game = Mangala(
         agent0=agent0,
         agent1=agent1,
         board=state,
+        debug= True
     )
     game.start()
 
 
 
 if __name__ == '__main__':
-    #td_gammon_vs_random()
+    td_gammon_vs_random()
     #td_gammon_vs_human()
     # mcts_vs_random()
     #human_vs_human()
