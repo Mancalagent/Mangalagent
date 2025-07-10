@@ -8,17 +8,17 @@ from mangala.mangala import Mangala
 from agents.mcts_agent import MCTSAgent
 from utils.util import Util
 
-
+weight_path = "/training/models/replay.pth"
 def td_gammon_vs_random():
-    weight_path = "/Users/omerislam/Desktop/Ömer/Koç/4th Year/Comp438/Mangalagent/agents/td_gammon/train/model.pth"
+
     network = TDNetwork()
     network.load_state_dict(torch.load(weight_path))
     agent0 = TDAgent(53, network)
     agent1 = RandomAgent(34)
-    game_count = 100
+    game_count = 1000
     win = 0
     for i in range(game_count):
-        print(f"Game {i+1}/{game_count}")
+        #print(f"Game {i+1}/{game_count}")
         game = Mangala(
             agent0=agent0,
             agent1=agent1,
@@ -28,8 +28,25 @@ def td_gammon_vs_random():
             win += 1
     print(f"Win rate: {(win / game_count)*100 :.2f}%")
 
+def td_gammon_vs_random_second():
+    network = TDNetwork()
+    network.load_state_dict(torch.load(weight_path))
+    agent0 = RandomAgent(34)
+    agent1 = TDAgent(53, network)
+    game_count = 1000
+    win = 0
+    for i in range(game_count):
+        #print(f"Game {i+1}/{game_count}")
+        game = Mangala(
+            agent0=agent0,
+            agent1=agent1,
+        )
+        game.start()
+        if game.get_winner() == 1:
+            win += 1
+    print(f"Win rate: {(win / game_count)*100 :.2f}%")
+
 def td_gammon_vs_human():
-    weight_path = "/agents/td_gammon/train/10k_model.pth"
     network = TDNetwork()
     network.load_state_dict(torch.load(weight_path))
     agent0 = TDAgent(53, network)
@@ -67,8 +84,6 @@ def td_w_mcst_vs_random():
     agent1 = MCTSAgent(53, mcts_tree=tree)
 
 def state_test():
-
-    weight_path = "/Users/omerislam/Desktop/Ömer/Koç/4th Year/Comp438/Mangalagent/agents/td_gammon/train/model.pth"
     network = TDNetwork()
     network.load_state_dict(torch.load(weight_path))
     agent0 = TDAgent(53, network)
@@ -88,9 +103,9 @@ def state_test():
 
 if __name__ == '__main__':
     td_gammon_vs_random()
+    td_gammon_vs_random_second()
     #td_gammon_vs_human()
     # mcts_vs_random()
     #human_vs_human()
     # pass
-
-    state_test()
+    #state_test()

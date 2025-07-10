@@ -32,33 +32,32 @@ class TDTrainer:
             state[6] = 0
             state[13] = 0
             e_trace = [torch.zeros_like(p) for p in self.net.parameters()]
-            flip = False
             done = False
             episode_loss = 0.0
-            epsilon = 0.8 if episode < episodes*0.2 else 0.1
+            epsilon_start = 0.9
+            epsilon_end = 0.1
+            epsilon_decay_episodes = 0.8 * episodes
+            epsilon = max(epsilon_end, epsilon_start - episode / epsilon_decay_episodes * (epsilon_start - epsilon_end))
+
             print(f"Episode {episode + 1}/{episodes}, Epsilon: {epsilon:.2f}")
             while not done:
-                if flip:
-                    state = Mangala.flip_board(state)
-                    flip = False
 
                 actions = self.agent.get_available_actions(state)
-
                 if random.random() < epsilon:
                     action = random.choice(actions)
                 else:
                     action = max(actions, key=lambda x: self.net(Mangala.transition(state, x)[0]).item())
-
-
-                if Mangala.check_for_extra_turn(state,action):
-                    flip = True
 
                 next_state, reward, is_terminal = Mangala.transition(state, action)
                 if is_terminal:
                     done = True
 
                 v = self.net(state)
-                v_next = self.net(next_state)
+
+                if not Mangala.check_for_extra_turn(state, action):
+                    next_state = Mangala.flip_board(next_state)
+
+                v_next = self.net(next_state).detach()
 
                 td_error = reward - v if is_terminal else reward + self.discount_factor * v_next - v
 
@@ -66,13 +65,13 @@ class TDTrainer:
                 v.backward()
                 with torch.no_grad():
                     for i, p in enumerate(self.net.parameters()):
-                        grad = p.grad.detach()
-                        e_trace[i] = self.discount_factor * self.trace_decay * e_trace[i] + grad
-                        p_new = p + self.learning_rate * td_error * e_trace[i]
-                        p.copy_(p_new)
+                        e_trace[i] = self.discount_factor * self.trace_decay * e_trace[i] + p.grad
+                        p.grad.copy_(td_error * e_trace[i])
+                self.optimizer.step()
 
                 episode_loss += td_error.item() ** 2
                 state = next_state
+
             losses.append(episode_loss)
         pprint.pprint(losses)
 

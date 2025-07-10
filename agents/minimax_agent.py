@@ -20,14 +20,6 @@ class MinimaxAgent(BaseAgent):
             return 0  # Default to first pit as fallback
         if len(available_actions) == 1:
             return available_actions[0]
-            
-        # Opening book - pit 2 or 3 are good first moves - hard coded for now
-        if sum(board) == 48 and board[6] == 0 and board[13] == 0:
-            # First move of the game
-            if 2 in available_actions:
-                return 2
-            elif 3 in available_actions:
-                return 3
         
         # Core minimax search
         best_action = available_actions[0]  # Default to first available action

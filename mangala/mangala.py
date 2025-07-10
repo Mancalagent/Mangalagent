@@ -49,7 +49,7 @@ class Mangala:
         player_pits = Util.get_players_pits(player_turn)
         opponent_store = Util.get_player_store(1 - player_turn)
         opponent_pits = Util.get_players_pits(1 - player_turn)
-
+        init_rocks = state[player_store]
         reward = 0.01
         while rocks > 0:
             index = (index + 1) % 14
@@ -85,7 +85,7 @@ class Mangala:
                         continue
 
                 if rocks == 1 & index == player_store:
-                    reward += 0.1
+                    reward += 0.2
 
             state[index] += 1
             rocks -= 1
@@ -96,7 +96,8 @@ class Mangala:
                 reward += 1
             else:
                 reward -= 1
-
+        if init_rocks < state[player_store]:
+            reward += 0.1
         return state, reward, is_terminal
 
     @classmethod
