@@ -8,7 +8,7 @@ from agents.replay_buffer import ReplayBuffer
 from mangala.mangala import Mangala
 from agents.td_gammon.td_network import TDNetwork
 from agents.minimax_agent import MinimaxAgent
-
+import matplotlib.pyplot as plt
 
 class TDTrainerMinimax:
     def __init__(self, agent, network, learning_rate=0.01, discount_factor=0.9,
@@ -155,6 +155,15 @@ class TDTrainerMinimax:
                     done = True
 
             losses.append(episode_loss)
+        plt.figure(figsize=(10, 6))
+        plt.plot(losses, label='Loss per Episode')
+        plt.xlabel('Episode')
+        plt.ylabel('Loss')
+        plt.title('Training Loss')
+        plt.legend()
+        plt.grid()
+        plt.savefig('loss_plot.png')
+        plt.close()
         pprint.pprint(losses)
 
     def save_model(self, filepath):

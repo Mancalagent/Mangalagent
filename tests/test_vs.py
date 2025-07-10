@@ -8,7 +8,7 @@ from mangala.mangala import Mangala
 from agents.mcts_agent import MCTSAgent
 from utils.util import Util
 
-weight_path = "/training/models/replay.pth"
+weight_path = "/Users/omerislam/Desktop/Ömer/Koç/4th Year/Comp438/Mangalagent/training/models/replay.pth"
 def td_gammon_vs_random():
 
     network = TDNetwork()
